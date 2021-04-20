@@ -9,7 +9,7 @@
 * Copy this code and directly run. No import from other folders etc. All networks are defined within this file.
 
 ## Run on local machines
-1. Spegify hyper-parameters in **#5** section. Set root directories (*mount on Google Drive if using Colab and use "/content/"-like path*) in `root_dir`. The code used absolute path. 
+1. Specify hyper-parameters in **#5** section. Set root directories (*mount on Google Drive if using Colab and use "/content/"-like path*) in `root_dir`. The code used absolute path. 
 
 2. Optionally set other parameters e.g. batch_size, how many iterations to save a checkpoint, how many iterations to save GAN images, how many iterations to output loss etc.
 
@@ -20,7 +20,7 @@
 
 
 ## Train 
-1. Train EC-GAN with *128x128* size output (instead of *32x32* in paper)
+1. Train EC-GAN with *128x128* size output (instead of *32x32* in paper) and ResNet-50 as the classifier.
 ```
 	python train_apr18.py
 ```
