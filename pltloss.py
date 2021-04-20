@@ -1,8 +1,9 @@
 from matplotlib import pyplot as plt
-f = open('logs/logs_loss_total.txt', 'r')
+f = open('logs/logs_test_classifier_acc.txt', 'r')
 lines = f.readlines()
 i = 0
 train = []
+sum_tx = 0
 for line in lines:
 	a = line.split(' ')
 	leng = len(a)
@@ -11,9 +12,9 @@ for line in lines:
 	tx = x[0:strleng - 1]
 	#print(tx)
 	train.append(float(tx))
-	
+	sum_tx += float(tx)
 	i += 1
-	
+print('AVG', sum_tx / float(i))
 f.close()
 fig = plt.figure(dpi=200)
 

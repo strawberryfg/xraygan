@@ -675,14 +675,14 @@ class colorlogger():
 
 #5. Configurations and arguments
 root_dir = "E:/ml/ZhangLabData/CellData/chest_xray/"
-batch_size = 32
+batch_size = 24
 img_size = 128
-display_per_iters = 3 # how many iterations before outputting to the console window
+display_per_iters = 10 # how many iterations before outputting to the console window
 save_gan_per_iters = 10 # save gan images per this iterations
 save_gan_img_folder_prefix = root_dir + "train_fake/"
 show_train_classifier_acc_per_iters = 1000000 # how many iterations before showing train acc of classifier
-show_test_classifier_acc_per_iters = 10 # 
-save_per_samples = 6000 # save a checkpoint per forward run of this number of samples
+show_test_classifier_acc_per_iters = 150 # 
+save_per_samples = 2000 # save a checkpoint per forward run of this number of samples
 model_ckpt_prefix = 'ecgan'
 
 # define device 
@@ -763,6 +763,7 @@ fake_classifier_logger = colorlogger("logs/", log_name="logs_C(G(z)).txt")
 total_logger = colorlogger("logs/", log_name="logs_loss_total.txt")
 train_accuracy_logger = colorlogger("logs/", log_name="logs_train_classifier_acc.txt")
 test_accuracy_logger = colorlogger("logs/", log_name="logs_test_classifier_acc.txt")
+avg_kl_logger = colorlogger("logs/", log_name="logs_avg_kl.txt")
 
 epochs = 100
 epoch_imgs = 10000 #how many images are defined as an epoch
@@ -888,9 +889,9 @@ netD = DataParallelModel(netD).cuda()
 netC = DataParallelModel(netC).cuda()
 
 # optimizers 
-blr_d = 0.0005
-blr_g = 0.001
-blr_c = 0.0005
+blr_d = 0.00025
+blr_g = 0.0002
+blr_c = 0.00025
 optD = optim.Adam(netD.parameters(), lr=blr_d, betas=(0.5, 0.999), weight_decay = 1e-3)
 optG = optim.Adam(netG.parameters(), lr=blr_g, betas=(0.5, 0.999))
 optC = optim.Adam(netC.parameters(), lr=blr_c, betas=(0.5, 0.999), weight_decay = 1e-3)
@@ -903,17 +904,81 @@ bce_loss = DataParallelCriterion(bce_loss, device_ids=[0])
 criterion = nn.CrossEntropyLoss()
 criterion = DataParallelCriterion(criterion, device_ids=[0])
 
-advWeight = 0.1 # adversarial weight
+advWeight = 0.25 # adversarial weight
 
-#5. Training loop
+#5. Loading trained weights
+def load_my_state_dict(model, state_dict):
+ 
+    own_state = model.state_dict()
+    for name, param in state_dict.items():
+        if name not in own_state:
+            continue
+        #own_state[name] = deepcopy(param)
+        own_state[name].copy_(param)
+    #print(own_state)
+    return own_state
+
+def load_model(model_path):
+    ckpt = torch.load(model_path) 
+    start_epoch = ckpt['epoch'] + 1
+    netD.load_state_dict(ckpt['netD'])    
+    netG.load_state_dict(ckpt['netG'])    
+    netC.load_state_dict(ckpt['netC'])
+    #optD.load_state_dict(ckpt['optD'])
+    #optG.load_state_dict(ckpt['optG'])
+    #optC.load_state_dict(ckpt['optC'])
+    total_trained_samples = ckpt['total_trained_samples']
+    return start_epoch, total_trained_samples
+
+
+def distance(X, Y, sqrt=True):
+    nX = X.size(0)
+    nY = Y.size(0)
+    
+    X = X.view(nX,-1).cuda()
+    X2 = (X*X).sum(1).resize(nX,1)
+    Y = Y.view(nY,-1).cuda()
+    Y2 = (Y*Y).sum(1).resize(nY,1)
+
+    M = torch.zeros(nX, nY)
+    M.copy_(X2.expand(nX,nY) + Y2.expand(nY,nX).transpose(0,1) - 2*torch.mm(X,Y.transpose(0,1)))
+
+    #del X, X2, Y, Y2
+    
+    if sqrt:
+        M = ((M+M.abs())/2).sqrt()
+
+    return M
+
+def mmd(Mxx, Mxy, Myy, sigma = 1):
+    scale = Mxx.mean()
+    Mxx = torch.exp(-Mxx/(scale*2*sigma*sigma))
+    Mxy = torch.exp(-Mxy/(scale*2*sigma*sigma))
+    Myy = torch.exp(-Myy/(scale*2*sigma*sigma))
+    a = Mxx.mean()+Myy.mean()-2*Mxy.mean()  
+    if a.item() > 1e-6:
+    	mmd = torch.sqrt(a)
+    	#print(mmd)
+    else:
+    	return -1
+    return mmd    
+
+#6. Training loop
 def train(total_trained_samples):
   netD.train()
   netG.train()
-  for epoch in range(epochs):
+  total_train = 0
+  correct_train = 0
+  total_test = 0
+  correct_test = 0
+  #N = 0
+  #pynormal = torch.tensor([0.0]).cuda()
+  #avg_kl = torch.tensor([0.0]) # we want to maximize E_G[D_{KL}(p(y|x) || p(y))] 
+  #avg_kl = avg_kl.cuda()
+  
+  for epoch in range(start_epoch, epochs):
     netC.train() #classifier
 
-    total_train = 0
-    correct_train = 0
     for steps in range(epoch_imgs // batch_size):
     
     	start = torch.cuda.Event(enable_timing=True)
@@ -948,7 +1013,7 @@ def train(total_trained_samples):
     	# train generator
     	optG.zero_grad()
     	predictionsFake = netD(fakeImageBatch)
-    	lossGenerator = bce_loss(predictionsFake, true_label) #labels = 1
+    	lossGenerator = bce_loss(predictionsFake, true_label) * 1 #labels = 1
     	lossGenerator.backward(retain_graph = True)
     	for g_step in range(3):
     		optG.step()
@@ -970,16 +1035,76 @@ def train(total_trained_samples):
     	predictionsFake = netC(fakeImageBatch)
     	# get a tensor of the labels that are most likely according to model
     	predictedLabels = torch.argmax(predictionsFake, 1) # -> [0 , 5, 9, 3, ...]
-    	confidenceThresh = .2
+    	confidenceThresh = 0.7
+    	klconfidenceThresh = 1e-6 # if prob is > klThresh include this in the expectation of KL term
+
+    	# 2 p(y|x)
+    	probs = F.softmax(predictionsFake, dim=1)
+    	# Compute MMD score 
+    	realImageBatch = inputs.detach().clone()
+    	# remember to detach this thing and clone and retain_graph = True for backprop
+    	predictions_real = netC(realImageBatch)    	
+    	probs_real = F.softmax(predictions_real, dim=1)
+    	real = probs_real
+    	fake = probs
+    	Mxx = distance(real, real, False)
+    	Mxy = distance(real, fake, False)
+    	Myy = distance(fake, fake, False)    	
+    	cur_mmd = mmd(Mxx, Mxy, Myy)    	
+    	if cur_mmd != -1:
+    		cur_mmd = cur_mmd * 3
+    		cur_mmd.require_grad = True
+    		cur_mmd.backward(retain_graph = True)
+    		#print('			mmd    is {:12.6f}'.format(cur_mmd.item()))    	
+    	else:
+    		cur_mmd = torch.tensor(-1.0)
+    		cur_mmd = cur_mmd.cuda()
+    	# Compute IS score (KL)
+    	# update p(y = normal)
+    	pynormal = torch.tensor([0.0]).cuda()
+    	
+    	for i in range(batch_size):
+    		pynormal += probs[i, 0]
+    		#pynormal = (pynormal * N + probs[i, 0]) / (N + 1)
+    		#N += 1
+    	pynormal = pynormal / batch_size
+    		
+    	# p(y = pneumonia)
+    	pypneu = 1 - pynormal
+    	
+    	# Update p(y) first N_old -> N then compute conditional
+    	#  D_{KL}(p(y|x) || p(y))
+    	avg_kl = torch.tensor([0.0]) # we want to maximize E_G[D_{KL}(p(y|x) || p(y))] 
+    	avg_kl = avg_kl.cuda()
+    	#N -= batch_size
+    	for i in range(batch_size):
+    		pynormalcondx = probs[i, 0]
+    		pypneucondx = probs[i, 1]
+    		eps = 1e-20
+    		kl = pynormalcondx * ((pynormalcondx + eps).log() - (pynormal + eps).log())\
+    				+ pypneucondx * ((pypneucondx + eps).log() - (pypneu + eps).log())    			
+    		avg_kl += kl
+    		#avg_kl = (avg_kl * N + kl) / (N + 1)
+    		#N += 1
+    	avg_kl = avg_kl / batch_size
+    		
+    	
+    	# inception score D_KL loss 
+    	#  want to minimize
+    	kl_loss = -avg_kl * 0.25
+    	kl_loss.require_grad = True
+    	#print('			kl loss is {:12.6f}'.format(kl_loss.item()))    	
 
     	# psuedo labeling threshold
-    	probs = F.softmax(predictionsFake, dim=1)
+    	
     	mostLikelyProbs = np.asarray([probs[i, predictedLabels[i]].item() for  i in range(len(probs))])
+    	#print(mostLikelyProbs)
     	toKeep = mostLikelyProbs > confidenceThresh
     	if sum(toKeep) != 0:
-    		fakeClassifierLoss = criterion(predictionsFake[toKeep], predictedLabels[toKeep]) * advWeight
-    		fakeClassifierLoss.backward()
+    		fakeClassifierLoss = criterion(predictionsFake[toKeep], predictedLabels[toKeep])  * advWeight
+    		fakeClassifierLoss.backward(retain_graph = True)
 
+    	kl_loss.backward(retain_graph = True)    	
     	optC.step()
 
     	# reset the gradients
@@ -993,14 +1118,17 @@ def train(total_trained_samples):
     	torch.cuda.synchronize()
     	total_trained_samples += batch_size
     	# Logging
-    	total_loss = lossDiscriminator + lossFake + lossGenerator + realClassifierLoss + fakeClassifierLoss
+    	total_loss = lossDiscriminator + lossFake + lossGenerator + realClassifierLoss#
+    	if sum(toKeep) != 0:
+    		total_loss += fakeClassifierLoss
     	if steps % display_per_iters == 0:
-    		print('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} BCE_D(x) is {:6.2f} BCE_D(G(z)) is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lossGenerator.item(), realClassifierLoss.item(), lossDiscriminator.item(), lossFake.item(), total_trained_samples))
-    	logger.info('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} BCE_D(x) is {:6.2f} BCE_D(G(z)) is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lossGenerator.item(), realClassifierLoss.item(), lossDiscriminator.item(), lossFake.item(), total_trained_samples))
+    		print('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} aKL is {:6.2f} KL is {:4.2f} mmd is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lossGenerator.item(), realClassifierLoss.item(), avg_kl.item(), kl_loss.item(), cur_mmd.item(), total_trained_samples)) #lossDiscriminator.item(), lossFake.item(),
+    	logger.info('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} aKL is {:6.2f} KL is {:4.2f} mmd is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lossGenerator.item(), realClassifierLoss.item(), avg_kl.item(), kl_loss.item(), cur_mmd.item(), total_trained_samples))
     	discriminator_logger.info('{:6.2f}'.format(lossDiscriminator.item()))
     	fake_logger.info('{:6.2f}'.format(lossFake.item()))
     	generator_logger.info('{:6.2f}'.format(lossGenerator.item()))
     	real_classifier_logger.info('{:6.2f}'.format(realClassifierLoss.item()))
+    	avg_kl_logger.info('{:6.2f}'.format(avg_kl.item()))
     	if sum(toKeep) != 0:
     		fake_classifier_logger.info('{:6.2f}'.format(fakeClassifierLoss.item()))
     	total_logger.info('{:6.2f}'.format(total_loss.item()))
@@ -1034,8 +1162,8 @@ def train(total_trained_samples):
     	
     			# accuracy
     			_, predicted = torch.max(outputs.data, 1)
-    			total_test = labels.size(0)
-    			correct_test = predicted.eq(labels.data).sum().item()
+    			total_test += labels.size(0)
+    			correct_test += predicted.eq(labels.data).sum().item()
     			test_accuracy = 100 * correct_test / total_test
     			print(' test acc', test_accuracy)
     			logger.info('                             Test Accuracy (classifier) is {:6.2f}'.format(test_accuracy))
@@ -1055,13 +1183,18 @@ def train(total_trained_samples):
             'total_trained_samples': total_trained_samples
                 }
     	if (steps * batch_size) % save_per_samples == 0:
-    		model_file = 'models/' + model_ckpt_prefix + 'bak_' + str(epoch + 1) + '_' + str((steps * batch_size) // save_per_samples) + '.pth'
+    		model_file = 'models_apr19/' + model_ckpt_prefix + 'bak_' + str(epoch + 1) + '_' + str((steps * batch_size) // save_per_samples) + '.pth'
     		torch.save(state, model_file)
 
-    model_file = 'models/' + model_ckpt_prefix + 'epo_' + str(epoch + 1) + '.pth'
+    model_file = 'models_apr19/' + model_ckpt_prefix + 'epo_' + str(epoch + 1) + '.pth'
     torch.save(state, model_file)
   return total_trained_samples
 total_trained_samples = 0
+torch.manual_seed(42)
+resume_training = True 
+start_epoch = 0
+if resume_training:
+	start_epoch, total_trained_samples = load_model('models_apr19/ecganepo_3.pth')
 total_trained_samples = train(total_trained_samples)
  
             
