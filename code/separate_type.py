@@ -2,7 +2,6 @@ import pandas as pd
 
 type_name = "Hernia"
 train_path = "/content/drive/MyDrive/xray GAN/xray14/"
-os.chdir(train_path)
 
 type_df = "df_" + type_name
 df = pd.read_csv(train_path + "data_entry.csv")
