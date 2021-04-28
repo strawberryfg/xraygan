@@ -439,7 +439,7 @@ class VGG(nn.Module):
         out['r53'] = F.relu(self.conv5_3(out['r52']))
         out['r54'] = F.relu(self.conv5_4(out['r53']))
         out['p5'] = self.pool5(out['r54'])
-        out['p6'] = self.pool6(out['r54'])
+        #out['p6'] = self.pool6(out['r54'])
         return [out[key] for key in out_keys]
 
 
@@ -627,6 +627,43 @@ class DCGAN_generator(nn.Module):
     output = self.main(input)
     return output
 
+
+class _netG64(nn.Module):
+    def __init__(self, ngpu):
+        super(_netG64, self).__init__()
+        self.ngpu = ngpu
+        nz = 100 # noise dimension
+        ngf = 64 # number of features map on the first layer
+        nc = 1 # number of channels
+        self.main = nn.Sequential(
+            # input is Z, going into a convolution
+            nn.ConvTranspose2d(     nz, ngf * 8, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(ngf * 8),
+            nn.ReLU(True),
+            # state size. (ngf*8) x 4 x 4
+            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 4),
+            nn.ReLU(True),
+            # state size. (ngf*4) x 8 x 8
+            nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 2),
+            nn.ReLU(True),
+            # state size. (ngf*2) x 16 x 16 
+            nn.ConvTranspose2d(ngf * 2, ngf * 1, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 1),
+            nn.ReLU(True),            
+            # state size. (ngf) x 32 x 32
+            nn.ConvTranspose2d(    ngf,      nc, 4, 2, 1, bias=False),
+            nn.Tanh()
+            # state size. (nc) x 64 x 64
+        )
+
+    def forward(self, input):
+        output = self.main(input)
+        return output
+
+
+
 class _netG(nn.Module):
     def __init__(self, ngpu):
         super(_netG, self).__init__()
@@ -664,6 +701,50 @@ class _netG(nn.Module):
     def forward(self, input):
     	output = self.main(input)
     	return output
+
+
+class _netG256(nn.Module):
+    def __init__(self, ngpu):
+        super(_netG256, self).__init__()
+        self.ngpu = ngpu
+        nz = 100 # noise dimension
+        ngf = 64 # number of features map on the first layer
+        nc = 1 # number of channels
+        self.main = nn.Sequential(
+            # input is Z, going into a convolution
+            nn.ConvTranspose2d(     nz, ngf * 32, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(ngf * 32),
+            nn.ReLU(True),
+            # state size. (ngf*32) x 4 x 4
+            nn.ConvTranspose2d(ngf * 32, ngf * 16, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 16),
+            nn.ReLU(True),
+            # state size. (ngf*16) x 8 x 8
+            nn.ConvTranspose2d(ngf * 16, ngf * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 8),
+            nn.ReLU(True),
+            # state size. (ngf*8) x 16 x 16 
+            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 4),
+            nn.ReLU(True),
+            # state size. (ngf*4) x 32 x 32
+            nn.ConvTranspose2d(ngf * 4,     ngf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 2),
+            nn.ReLU(True),
+            # state size. (ngf*2) x 64 x 64
+            nn.ConvTranspose2d(ngf * 2,     ngf, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf),
+            nn.ReLU(True),
+            # state size. (ngf) x 128 x 128
+            nn.ConvTranspose2d(    ngf,      nc, 4, 2, 1, bias=False),
+            nn.Tanh()
+            # state size. (nc) x 256 x 256
+        )
+
+    def forward(self, input):
+        output = self.main(input)
+        return output
+
 
 #2. DCGAN Discriminator
 class DCGAN_discriminator(nn.Module):
@@ -724,6 +805,40 @@ class DCGAN_discriminator(nn.Module):
 
     return output.view(-1, 1).squeeze(1)
 
+
+class _netD64(nn.Module):
+    def __init__(self, ngpu):
+        super(_netD64, self).__init__()
+        self.ngpu = ngpu
+        ndf = 64
+        nc = 1
+        self.main = nn.Sequential(
+            # input is (nc) x 64 x 64
+            nn.Conv2d(nc, ndf, 4, stride=2, padding=1, bias=False), 
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 32 x 32
+            nn.Conv2d(ndf, ndf * 2, 4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 16 x 16
+            nn.Conv2d(ndf * 2, ndf * 4, 4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*4) x 8 x 8
+            nn.Conv2d(ndf * 4, ndf * 8, 4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*8) x 4 x 4
+            nn.Conv2d(ndf * 8, 1, 4, stride=1, padding=0, bias=False),
+            nn.Sigmoid()
+            # state size. 1
+        )
+
+    def forward(self, input):
+        output = self.main(input)
+        return output.view(-1, 1).squeeze(1)
+
+
 class _netD(nn.Module):
     def __init__(self, ngpu):
         super(_netD, self).__init__()
@@ -759,6 +874,48 @@ class _netD(nn.Module):
     def forward(self, input):
     	output = self.main(input)
     	return output.view(-1, 1).squeeze(1)
+
+class _netD256(nn.Module):
+    def __init__(self, ngpu):
+        super(_netD256, self).__init__()
+        self.ngpu = ngpu
+        ndf = 64
+        nc = 1
+        self.main = nn.Sequential(
+            # input is (nc) x 256 x 256
+            nn.Conv2d(nc, ndf, 4, stride=2, padding=1, bias=False), 
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf) x 128 x 128
+            nn.Conv2d(ndf, ndf * 2, 4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*2) x 64 x 64
+            nn.Conv2d(ndf * 2, ndf * 4, 4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*4) x 32 x 32 
+            nn.Conv2d(ndf * 4, ndf * 8, 4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*8) x 16 x 16
+            nn.Conv2d(ndf * 8, ndf * 16, 4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(ndf * 16),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size. (ndf*16) x 8 x 8
+            nn.Conv2d(ndf * 16, ndf * 32, 4, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(ndf * 32),
+            nn.LeakyReLU(0.2, inplace=True),            
+            # state size. (ndf*32) x 4 x 4
+            nn.Conv2d(ndf * 32, 1, 4, stride=1, padding=0, bias=False),
+            nn.Sigmoid()
+            # state size. 1
+        )
+
+    def forward(self, input):
+        output = self.main(input)
+        return output.view(-1, 1).squeeze(1)
+
+
 
 #3. ResNet
 
@@ -911,13 +1068,13 @@ class colorlogger():
 #5. Configurations and arguments
 root_dir = "E:/ml/" # chest x-ray 14
 n_classes = 15 # 0 is normal : no finding
-batch_size = 16
+batch_size = 22
 img_size = 128
-display_per_iters = 10 # how many iterations before outputting to the console window
-save_gan_per_iters = 10 # save gan images per this iterations
+display_per_iters = 5 # how many iterations before outputting to the console window
+save_gan_per_iters = 5 # save gan images per this iterations
 save_gan_img_folder_prefix = root_dir + "train_fake/"
 show_train_classifier_acc_per_iters = 1000000 # how many iterations before showing train acc of classifier
-show_test_classifier_acc_per_iters = 150 # 
+show_test_classifier_acc_per_iters = 15 # 
 save_per_samples = 2000 # save a checkpoint per forward run of this number of samples
 model_ckpt_prefix = 'ecgan-chest-xray14'
 
@@ -929,7 +1086,7 @@ image_index_list_file = root_dir + "image_index.txt"
 labels_file = root_dir + "labels.txt"
 train_val_list_file = root_dir + "train_val_list.txt"
 test_list_file = root_dir + "test_list.txt"
-img_folders = { 'images_001/'}
+img_folders = { 'images_001/', 'images_002/', 'images_003/', 'images_005/', 'images_008/', 'images_011'}
 suffix = 'images/'
 image_index_list = []    
 labels_list = []
@@ -1127,11 +1284,27 @@ def sample_test_images_randomly():
     return inputs, labels
 
 
+
+#6.5 label smoothing
+class LabelSmoothingCrossEntropy(nn.Module):
+    def __init__(self):
+        super(LabelSmoothingCrossEntropy, self).__init__()
+    def forward(self, x, target, smoothing=0.2):
+        confidence = 1. - smoothing
+        logprobs = F.log_softmax(x, dim=-1)
+        nll_loss = -logprobs.gather(dim=-1, index=target.unsqueeze(1))
+        nll_loss = nll_loss.squeeze(1)
+        smooth_loss = -logprobs.mean(dim=-1)
+        loss = confidence * nll_loss + smoothing * smooth_loss
+        return loss.mean()
+
+
+
 # models
 # _net: 128x128
 # DCGAN_: 64X64
-netG = _netG(1) #DCGAN_generator(1) # # # #DCGAN_generator(1)
-netD = _netD(1) #DCGAN_discriminator(1) # # # #DCGAN_discriminator(1)
+netG = _netG(1) #DCGAN_generator(1) 
+netD = _netD(1) #DCGAN_discriminator(1)
 netC = ResNetBackbone(50, num_classes = 15) #ResNet18() #normal or pneumonia
 netC.init_weights()
 
@@ -1140,9 +1313,9 @@ netD = DataParallelModel(netD).cuda()
 netC = DataParallelModel(netC).cuda()
 
 # optimizers 
-blr_d = 0.0005
+blr_d = 0.00025
 blr_g = 0.0005
-blr_c = 0.0005
+blr_c = 0.00025
 optD = optim.Adam(netD.parameters(), lr=blr_d, betas=(0.5, 0.999), weight_decay = 1e-3)
 optG = optim.Adam(netG.parameters(), lr=blr_g, betas=(0.5, 0.999))
 optC = optim.Adam(netC.parameters(), lr=blr_c, betas=(0.5, 0.999), weight_decay = 1e-3)
@@ -1228,7 +1401,10 @@ def train(total_trained_samples):
   #avg_kl = avg_kl.cuda()
   acc_d_step = 0 # update generator per n D steps e.g. n = 5
   acc_g_step = 0
+  train_g_more = True
+  train_d_more = not(train_g_more)
   g_vs_d = 3
+  d_vs_g = 2
   for epoch in range(start_epoch, epochs):
     netC.train() #classifier
 
@@ -1255,7 +1431,7 @@ def train(total_trained_samples):
         predictionsReal = netD(inputs)
     	#print(inputs.shape)
     	#print(predictionsReal.shape)
-        lossDiscriminator = bce_loss(predictionsReal, true_label) #labels = 1
+        lossDiscriminator = bce_loss(predictionsReal, true_label) * 0.5 #labels = 1
         lossDiscriminator.backward(retain_graph = True)
 
     	# train discriminator on fake images
@@ -1263,7 +1439,11 @@ def train(total_trained_samples):
         lossFake = bce_loss(predictionsFake, fake_label) #labels = 0
         lossFake.backward(retain_graph = True)
         #optD.step()
-        if acc_g_step % g_vs_d == 0:
+        if train_g_more:
+            if acc_g_step % g_vs_d == 0:
+                optD.step()
+                acc_d_step += 1
+        else:
             optD.step()
             acc_d_step += 1
 
@@ -1272,12 +1452,17 @@ def train(total_trained_samples):
             p.requires_grad = False # to avoid computation
         optG.zero_grad()
         predictionsFake = netD(fakeImageBatch)
-        lossGenerator = bce_loss(predictionsFake, true_label) * 1 #labels = 1
+        lossGenerator = bce_loss(predictionsFake, true_label) * 0.5 #labels = 1
         lossGenerator.backward(retain_graph = True)
         # count steps of updating generating
         #if acc_d_step % d_vs_g == 0:
-        optG.step()
-        acc_g_step += 1
+        if train_d_more:
+            if acc_d_step % d_vs_g == 0:
+                optG.step()
+                acc_g_step += 1
+        else:
+            optG.step()
+            acc_g_step += 1
         torch.autograd.set_detect_anomaly(True)
         fakeImageBatch = fakeImageBatch.detach().clone()
 
@@ -1302,7 +1487,7 @@ def train(total_trained_samples):
         # style & content from deconv opt
         out = vgg(opt, loss_layers)
         layer_losses = [weights[a] * loss_fns[a](A, targets[a]) for a,A in enumerate(out)]
-        nst_loss = sum(layer_losses) * 0.001
+        nst_loss = sum(layer_losses) * 0.005
         nst_loss.backward()
         if steps % display_per_iters == 0:
             print('Style: Real Content: GAN NST Style Gram Matrix Loss is {:6.2f}'.format(nst_loss.item()))
@@ -1310,7 +1495,7 @@ def train(total_trained_samples):
         
     	# train classifier on real data
         predictions = netC(inputs)
-        realClassifierLoss = criterion(predictions, labels)
+        realClassifierLoss = criterion(predictions, labels) * 0.5
         realClassifierLoss.backward(retain_graph=True)
 
     	# update classifier's gradient on real data
@@ -1384,7 +1569,7 @@ def train(total_trained_samples):
         #print(mostLikelyProbs)
         toKeep = mostLikelyProbs > confidenceThresh
         if sum(toKeep) != 0:
-            fakeClassifierLoss = criterion(predictionsFake[toKeep], predictedLabels[toKeep])  * advWeight
+            fakeClassifierLoss = criterion(predictionsFake[toKeep], predictedLabels[toKeep])  * 0.5 * advWeight
             fakeClassifierLoss.backward(retain_graph = True)
 
     	#kl_loss.backward(retain_graph = True) 
@@ -1471,10 +1656,10 @@ def train(total_trained_samples):
   return total_trained_samples
 total_trained_samples = 0
 torch.manual_seed(42)
-resume_training = False
+resume_training = True
 start_epoch = 0
 if resume_training:
-	start_epoch, total_trained_samples = load_model('models_apr19/ecganepo_3.pth')
+	start_epoch, total_trained_samples = load_model('../models_apr28/ecgan-chest-xray14bak_18_0.pth')
 total_trained_samples = train(total_trained_samples)
  
             
