@@ -45,7 +45,7 @@ This one shows training accuracy on real data.
  
  
 ```
-	python train_apr28.py
+	python train_apr27.py
 ```
 
 ### Notes
