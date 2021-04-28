@@ -1,5 +1,5 @@
 from matplotlib import pyplot as plt
-f = open('logs/logs_test_classifier_acc.txt', 'r')
+f = open('../logs/logs_avg_kl.txt', 'r')
 lines = f.readlines()
 i = 0
 train = []

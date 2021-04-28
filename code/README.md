@@ -32,6 +32,20 @@ This one shows training accuracy on real data.
 ```
 	python train_apr19.py
 ```
+
+3. Train on Chest Xray 14 dataset 
+
+    **One model for all classes**
+    
+	a. inception score (KL)
+	
+	b. maximum mean discrepancy (MMD)
+	
+	c. style transfer gram matrix loss (**Style Reconstruction Loss** in the **Perceptual** paper)
  
+ 
+```
+	python train_apr28.py
+```
 
 ### Notes
