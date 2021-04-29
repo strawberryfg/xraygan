@@ -1394,9 +1394,9 @@ netD = DataParallelModel(netD).cuda()
 netC = DataParallelModel(netC).cuda()
 
 # optimizers 
-blr_d = 0.00025
-blr_g = 0.0005
-blr_c = 0.00025
+blr_d = 0.0001
+blr_g = 0.0001
+blr_c = 0.0001
 optD = optim.Adam(netD.parameters(), lr=blr_d, betas=(0.5, 0.999), weight_decay = 1e-3)
 optG = optim.Adam(netG.parameters(), lr=blr_g, betas=(0.5, 0.999))
 optC = optim.Adam(netC.parameters(), lr=blr_c, betas=(0.5, 0.999), weight_decay = 1e-3)
@@ -1485,9 +1485,9 @@ def train(total_trained_samples):
   #avg_kl = avg_kl.cuda()
   acc_d_step = 0 # update generator per n D steps e.g. n = 5
   acc_g_step = 0
-  train_g_more = False
+  train_g_more = True
   train_d_more = not(train_g_more)
-  g_vs_d = 2
+  g_vs_d = 1
   d_vs_g = 2
   for epoch in range(start_epoch, epochs):
     netC.train() #classifier
@@ -1541,7 +1541,7 @@ def train(total_trained_samples):
             p.requires_grad = False # to avoid computation
         optG.zero_grad()
         predictionsFake = netD(fakeImageBatch)
-        lossGenerator = bce_loss(predictionsFake, true_label) * 0.1 #labels = 1
+        lossGenerator = bce_loss(predictionsFake, true_label) * 0.05 #labels = 1
         lg = lossGenerator.item()
         #lossGenerator *= (ld / lossGenerator.item())
         lossGenerator.backward(retain_graph = True)
@@ -1586,7 +1586,7 @@ def train(total_trained_samples):
         
     	# train classifier on real data
         predictions = netC(inputs)
-        realClassifierLoss = criterion(predictions, labels) * 0.5
+        realClassifierLoss = criterion(predictions, labels) * 1
         realClassifierLoss.backward(retain_graph=True)
 
     	# update classifier's gradient on real data
@@ -1598,7 +1598,7 @@ def train(total_trained_samples):
         predictionsFake = netC(fakeImageBatch)
     	# get a tensor of the labels that are most likely according to model
         predictedLabels = torch.argmax(predictionsFake, 1) # -> [0 , 5, 9, 3, ...]
-        confidenceThresh = 0.7
+        confidenceThresh = 0.6
         klconfidenceThresh = 1e-6 # if prob is > klThresh include this in the expectation of KL term
         
         # 2 p(y|x)
@@ -1661,7 +1661,7 @@ def train(total_trained_samples):
         #print(mostLikelyProbs)
         toKeep = mostLikelyProbs > confidenceThresh
         if sum(toKeep) != 0:
-            fakeClassifierLoss = criterion(predictionsFake[toKeep], predictedLabels[toKeep])  * 0.5 * advWeight
+            fakeClassifierLoss = criterion(predictionsFake[toKeep], predictedLabels[toKeep])  * 1 * advWeight
             fakeClassifierLoss.backward(retain_graph = True)
         kl_loss.backward(retain_graph = True) 
         optC.step()
@@ -1750,7 +1750,7 @@ torch.manual_seed(42)
 resume_training = True
 start_epoch = 0
 if resume_training:
-	start_epoch, total_trained_samples = load_model('../models_apr28/ecgan-chest-xray14epo_36.pth')
+	start_epoch, total_trained_samples = load_model('../models_apr28/ecgan-chest-xray14epo_38.pth')
 total_trained_samples = train(total_trained_samples)
  
             
