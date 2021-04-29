@@ -1078,6 +1078,9 @@ show_test_classifier_acc_per_iters = 15 #
 save_per_samples = 2000 # save a checkpoint per forward run of this number of samples
 model_ckpt_prefix = 'ecgan-chest-xray14'
 
+use_label_smoothing = True
+smoothing = 0.1
+
 # define device 
 device = torch.device("cuda:0")
 
@@ -1086,7 +1089,7 @@ image_index_list_file = root_dir + "image_index.txt"
 labels_file = root_dir + "labels.txt"
 train_val_list_file = root_dir + "train_val_list.txt"
 test_list_file = root_dir + "test_list.txt"
-img_folders = { 'images_001/', 'images_002/', 'images_003/', 'images_005/', 'images_008/', 'images_011'}
+img_folders = { 'images_001/', 'images_002/', 'images_003/', 'images_005/', 'images_008/', 'images_011/', 'images_006/', 'images_007/', 'images_004/', 'images_009/', 'images_010/', 'images_012/'}
 suffix = 'images/'
 image_index_list = []    
 labels_list = []
@@ -1289,7 +1292,7 @@ def sample_test_images_randomly():
 class LabelSmoothingCrossEntropy(nn.Module):
     def __init__(self):
         super(LabelSmoothingCrossEntropy, self).__init__()
-    def forward(self, x, target, smoothing=0.2):
+    def forward(self, x, target, smoothing=0.1):
         confidence = 1. - smoothing
         logprobs = F.log_softmax(x, dim=-1)
         nll_loss = -logprobs.gather(dim=-1, index=target.unsqueeze(1))
@@ -1297,6 +1300,84 @@ class LabelSmoothingCrossEntropy(nn.Module):
         smooth_loss = -logprobs.mean(dim=-1)
         loss = confidence * nll_loss + smoothing * smooth_loss
         return loss.mean()
+
+
+
+def mixup_data(x, y, alpha=1.0, use_cuda=True):
+    '''Returns mixed inputs, pairs of targets, and lambda'''
+    if alpha > 0:
+        lam = np.random.beta(alpha, alpha)
+    else:
+        lam = 1
+
+    batch_size = x.size()[0]
+    if use_cuda:
+        index = torch.randperm(batch_size).cuda()
+    else:
+        index = torch.randperm(batch_size)
+
+    mixed_x = lam * x + (1 - lam) * x[index, :]
+    y_a, y_b = y, y[index]
+    return mixed_x, y_a, y_b, lam
+
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+
+class LabelSmoothingCrossEntropy(nn.Module):
+    def __init__(self):
+        super(LabelSmoothingCrossEntropy, self).__init__()
+    def forward(self, x, target, smoothing=0.2):        
+        confidence = 1. - smoothing
+        logprobs = F.log_softmax(x, dim=-1)
+        nll_loss = -logprobs.gather(dim=-1, index=target.unsqueeze(1))
+        nll_loss = nll_loss.squeeze(1)
+        smooth_loss = -logprobs.mean(dim=-1)
+        loss = confidence * nll_loss + smoothing * smooth_loss
+        return loss.mean()
+##
+# version 1: use torch.autograd
+class LabelSmoothSoftmaxCEV1(nn.Module):
+    '''
+    This is the autograd version, you can also try the LabelSmoothSoftmaxCEV2 that uses derived gradients
+    '''
+
+    def __init__(self, lb_smooth=0.1, reduction='mean', ignore_index=-100):
+        super(LabelSmoothSoftmaxCEV1, self).__init__()
+        self.lb_smooth = lb_smooth
+        self.reduction = reduction
+        self.lb_ignore = ignore_index
+        self.log_softmax = nn.LogSoftmax(dim=1)
+
+    def forward(self, logits, label):
+        '''
+        Same usage method as nn.CrossEntropyLoss:
+            >>> criteria = LabelSmoothSoftmaxCEV1()
+            >>> logits = torch.randn(8, 19, 384, 384) # nchw, float/half
+            >>> lbs = torch.randint(0, 19, (8, 384, 384)) # nhw, int64_t
+            >>> loss = criteria(logits, lbs)
+        '''
+        # overcome ignored label
+        logits = logits.float() # use fp32 to avoid nan
+        with torch.no_grad():
+            num_classes = logits.size(1)
+            label = label.clone().detach()
+            ignore = label.eq(self.lb_ignore)
+            n_valid = ignore.eq(0).sum()
+            label[ignore] = 0
+            lb_pos, lb_neg = 1. - self.lb_smooth, self.lb_smooth / num_classes
+            lb_one_hot = torch.empty_like(logits).fill_(
+                lb_neg).scatter_(1, label.unsqueeze(1), lb_pos).detach()
+
+        logs = self.log_softmax(logits)
+        loss = -torch.sum(logs * lb_one_hot, dim=1)
+        loss[ignore] = 0
+        if self.reduction == 'mean':
+            loss = loss.sum() / n_valid
+        if self.reduction == 'sum':
+            loss = loss.sum()
+
+        return loss
 
 
 
@@ -1325,7 +1406,10 @@ optC = optim.Adam(netC.parameters(), lr=blr_c, betas=(0.5, 0.999), weight_decay 
 bce_loss = nn.BCELoss()
 bce_loss = DataParallelCriterion(bce_loss, device_ids=[0])
 # 2) for classifier
-criterion = nn.CrossEntropyLoss()
+if use_label_smoothing:
+    criterion = LabelSmoothSoftmaxCEV1(lb_smooth=smoothing, ignore_index=255, reduction='mean')
+else:
+    criterion = nn.CrossEntropyLoss() #LabelSmoothingCrossEntropy() #
 criterion = DataParallelCriterion(criterion, device_ids=[0])
 
 advWeight = 0.25 # adversarial weight
@@ -1401,9 +1485,9 @@ def train(total_trained_samples):
   #avg_kl = avg_kl.cuda()
   acc_d_step = 0 # update generator per n D steps e.g. n = 5
   acc_g_step = 0
-  train_g_more = True
+  train_g_more = False
   train_d_more = not(train_g_more)
-  g_vs_d = 3
+  g_vs_d = 2
   d_vs_g = 2
   for epoch in range(start_epoch, epochs):
     netC.train() #classifier
@@ -1417,6 +1501,8 @@ def train(total_trained_samples):
         inputs, labels = sample_train_images_randomly()
         inputs = inputs.cuda()
         labels = labels.cuda()
+        
+
     	#print('sampling done')
     	# create label arrays
         true_label = torch.ones(batch_size, device=device)
@@ -1438,6 +1524,8 @@ def train(total_trained_samples):
         predictionsFake = netD(fakeImageBatch)
         lossFake = bce_loss(predictionsFake, fake_label) #labels = 0
         lossFake.backward(retain_graph = True)
+        ld = lossDiscriminator.item() + lossFake.item()
+
         #optD.step()
         if train_g_more:
             if acc_g_step % g_vs_d == 0:
@@ -1447,12 +1535,15 @@ def train(total_trained_samples):
             optD.step()
             acc_d_step += 1
 
+
     	# train generator
         for p in netD.parameters():
             p.requires_grad = False # to avoid computation
         optG.zero_grad()
         predictionsFake = netD(fakeImageBatch)
-        lossGenerator = bce_loss(predictionsFake, true_label) * 0.5 #labels = 1
+        lossGenerator = bce_loss(predictionsFake, true_label) * 0.1 #labels = 1
+        lg = lossGenerator.item()
+        #lossGenerator *= (ld / lossGenerator.item())
         lossGenerator.backward(retain_graph = True)
         # count steps of updating generating
         #if acc_d_step % d_vs_g == 0:
@@ -1487,7 +1578,7 @@ def train(total_trained_samples):
         # style & content from deconv opt
         out = vgg(opt, loss_layers)
         layer_losses = [weights[a] * loss_fns[a](A, targets[a]) for a,A in enumerate(out)]
-        nst_loss = sum(layer_losses) * 0.005
+        nst_loss = sum(layer_losses) * 0.001
         nst_loss.backward()
         if steps % display_per_iters == 0:
             print('Style: Real Content: GAN NST Style Gram Matrix Loss is {:6.2f}'.format(nst_loss.item()))
@@ -1561,6 +1652,7 @@ def train(total_trained_samples):
     	# inception score D_KL loss 
     	#   want to minimize so take -avg_kl min(-avg_kl) = max(avg_kl)
         kl_loss = -avg_kl * 0.25
+        
         kl_loss.require_grad = True
     	#print('			kl loss is {:12.6f}'.format(kl_loss.item()))    	
 
@@ -1571,8 +1663,7 @@ def train(total_trained_samples):
         if sum(toKeep) != 0:
             fakeClassifierLoss = criterion(predictionsFake[toKeep], predictedLabels[toKeep])  * 0.5 * advWeight
             fakeClassifierLoss.backward(retain_graph = True)
-
-    	#kl_loss.backward(retain_graph = True) 
+        kl_loss.backward(retain_graph = True) 
         optC.step()
 
     	# reset the gradients
@@ -1586,12 +1677,12 @@ def train(total_trained_samples):
         torch.cuda.synchronize()
         total_trained_samples += batch_size
     	# Logging
-        total_loss = lossDiscriminator + lossFake + lossGenerator + realClassifierLoss #
+        total_loss = lossDiscriminator + lossFake + cur_mmd + realClassifierLoss #
         if sum(toKeep) != 0:
             total_loss += fakeClassifierLoss
         if steps % display_per_iters == 0:  
-            print('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} aKL is {:4.2f}  mmd is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lossGenerator.item(), realClassifierLoss.item(), avg_kl.item(), cur_mmd.item(), total_trained_samples)) #lossDiscriminator.item(), lossFake.item(),
-        logger.info('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} aKL is {:4.2f}  mmd is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lossGenerator.item(), realClassifierLoss.item(), avg_kl.item(), cur_mmd.item(), total_trained_samples))
+            print('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} aKL is {:4.2f}  mmd is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lg, realClassifierLoss.item(), avg_kl.item(), cur_mmd.item(), total_trained_samples)) #lossDiscriminator.item(), lossFake.item(),
+        logger.info('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} aKL is {:4.2f}  mmd is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lg, realClassifierLoss.item(), avg_kl.item(), cur_mmd.item(), total_trained_samples))
         discriminator_logger.info('{:6.2f}'.format(lossDiscriminator.item()))
         fake_logger.info('{:6.2f}'.format(lossFake.item()))
         generator_logger.info('{:6.2f}'.format(lossGenerator.item()))
@@ -1659,7 +1750,7 @@ torch.manual_seed(42)
 resume_training = True
 start_epoch = 0
 if resume_training:
-	start_epoch, total_trained_samples = load_model('../models_apr28/ecgan-chest-xray14bak_18_0.pth')
+	start_epoch, total_trained_samples = load_model('../models_apr28/ecgan-chest-xray14epo_36.pth')
 total_trained_samples = train(total_trained_samples)
  
             
