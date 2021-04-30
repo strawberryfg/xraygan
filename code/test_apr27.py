@@ -1312,7 +1312,7 @@ def sample_test_images_sequentially(lb, ub):
 
     TEST_AUG = torch.nn.Sequential(
             
-            #T.RandomResizedCrop((img_size, img_size), scale=(0.75, 1.33), ratio=(0.75, 1.3333333333333333)),
+            T.RandomResizedCrop((img_size, img_size), scale=(0.75, 1.33), ratio=(0.75, 1.3333333333333333)),
             T.Normalize(
                 mean=torch.tensor([0.485]),
                 std=torch.tensor([0.229])),
@@ -1516,7 +1516,7 @@ def test_all(file, epoch, best_accuracy, best_epoch):
     netG.eval()
     total_test = 0
     correct_test = 0
-    test_num = 200    
+    test_num = 100    
     # sample some test images
     with torch.no_grad():
          for steps in range(test_num):

@@ -1068,7 +1068,7 @@ class colorlogger():
 #5. Configurations and arguments
 root_dir = "E:/ml/" # chest x-ray 14
 n_classes = 15 # 0 is normal : no finding
-batch_size = 22
+batch_size = 12
 img_size = 128
 display_per_iters = 5 # how many iterations before outputting to the console window
 save_gan_per_iters = 5 # save gan images per this iterations
@@ -1078,7 +1078,7 @@ show_test_classifier_acc_per_iters = 15 #
 save_per_samples = 2000 # save a checkpoint per forward run of this number of samples
 model_ckpt_prefix = 'ecgan-chest-xray14'
 
-use_label_smoothing = True
+use_label_smoothing = False
 smoothing = 0.1
 
 # define device 
@@ -1394,9 +1394,9 @@ netD = DataParallelModel(netD).cuda()
 netC = DataParallelModel(netC).cuda()
 
 # optimizers 
-blr_d = 0.0001
-blr_g = 0.0001
-blr_c = 0.0001
+blr_d = 0.00005
+blr_g = 0.0002
+blr_c = 0.0002
 optD = optim.Adam(netD.parameters(), lr=blr_d, betas=(0.5, 0.999), weight_decay = 1e-3)
 optG = optim.Adam(netG.parameters(), lr=blr_g, betas=(0.5, 0.999))
 optC = optim.Adam(netC.parameters(), lr=blr_c, betas=(0.5, 0.999), weight_decay = 1e-3)
@@ -1412,7 +1412,7 @@ else:
     criterion = nn.CrossEntropyLoss() #LabelSmoothingCrossEntropy() #
 criterion = DataParallelCriterion(criterion, device_ids=[0])
 
-advWeight = 0.25 # adversarial weight
+advWeight = 0.5 # adversarial weight
 
 #5. Loading trained weights
 def load_my_state_dict(model, state_dict):
@@ -1471,6 +1471,74 @@ def mmd(Mxx, Mxy, Myy, sigma = 1):
     	return -1
     return mmd    
 
+
+#6. Sequentially sample test images 
+def sample_test_images_sequentially(lb, ub):
+    inputs = []
+    labels = []
+    for i in range(batch_size):
+        #sz = len(test_list)
+        img_id = lb + i #random.randint(0, sz - 1)
+        img_path = test_list[img_id]
+        if not osp.exists(img_path):
+            print('Image ', img_path, 'does not exist?')
+        else:
+            img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE | cv2.IMREAD_IGNORE_ORIENTATION)
+            img = img / 256.0
+            #on my laptop it needs to be divided by 256 not sure elsewhere to be in the range[0, 1]
+            img = cv2.resize(img, (img_size, img_size))
+            img = img.astype(np.float32)
+            img = torch.from_numpy(img)
+            img = img.reshape((img.shape[0], img.shape[1], 1))
+            img = img.permute(2, 0, 1).data.cpu().numpy()
+            inputs.append(img)
+        this_label = test_labels[img_id]
+        labels.append(this_label)        
+
+    TEST_AUG = torch.nn.Sequential(
+            
+            T.RandomResizedCrop((img_size, img_size), scale=(0.75, 1.33), ratio=(0.75, 1.3333333333333333)),
+            T.Normalize(
+                mean=torch.tensor([0.485]),
+                std=torch.tensor([0.229])),
+        )
+    inputs = np.array(inputs)
+    inputs = torch.from_numpy(inputs)
+    inputs = TEST_AUG(inputs)
+    labels = np.array(labels)
+    labels = labels.reshape((labels.shape[0]))
+    labels = torch.from_numpy(labels).long()
+    return inputs, labels
+
+
+
+#6. Testing loop
+def test_all(epoch, best_accuracy, best_epoch):
+    netC.eval()
+    total_test = 0
+    correct_test = 0
+    test_num = 100    
+    # sample some test images
+    with torch.no_grad():
+         for steps in range(test_num):
+             inputs, labels = sample_test_images_sequentially(steps * batch_size, (steps + 1) * batch_size)
+             inputs = inputs.cuda()
+             labels = labels.cuda()
+             outputs = netC(inputs)
+        
+             # accuracy
+             _, predicted = torch.max(outputs.data, 1)
+             total_test += labels.size(0)
+             correct_test += predicted.eq(labels.data).sum().item()
+             test_accuracy = 100 * correct_test / total_test
+    #print('Epoch {:5d} test acc {:6.2f} Current Best {:6.2f} \n'.format(epoch, test_accuracy, best_accuracy))
+    #file.write('Epoch {:5d} test acc {:6.2f} Current Best {:6.2f} \n'.format(epoch, test_accuracy, best_accuracy))
+    if test_accuracy > best_accuracy:
+       best_accuracy = test_accuracy
+       best_epoch = epoch
+    return test_accuracy, best_accuracy, best_epoch     
+
+
 #6. Training loop
 def train(total_trained_samples):
   netD.train()
@@ -1479,6 +1547,8 @@ def train(total_trained_samples):
   correct_train = 0
   total_test = 0
   correct_test = 0
+  best_acc = 0
+  best_epoch = 0
   #N = 0
   #pynormal = torch.tensor([0.0]).cuda()
   #avg_kl = torch.tensor([0.0]) # we want to maximize E_G[D_{KL}(p(y|x) || p(y))] 
@@ -1487,8 +1557,8 @@ def train(total_trained_samples):
   acc_g_step = 0
   train_g_more = True
   train_d_more = not(train_g_more)
-  g_vs_d = 3
-  d_vs_g = 2
+  g_vs_d = 4
+  d_vs_g = 3
   for epoch in range(start_epoch, epochs):
     netC.train() #classifier
 
@@ -1598,7 +1668,7 @@ def train(total_trained_samples):
         predictionsFake = netC(fakeImageBatch)
     	# get a tensor of the labels that are most likely according to model
         predictedLabels = torch.argmax(predictionsFake, 1) # -> [0 , 5, 9, 3, ...]
-        confidenceThresh = 0.65 #disable
+        confidenceThresh = 0.4 #disable
         klconfidenceThresh = 1e-6 # if prob is > klThresh include this in the expectation of KL term
         
         # 2 p(y|x)
@@ -1655,17 +1725,35 @@ def train(total_trained_samples):
         
         kl_loss.require_grad = True
     	#print('			kl loss is {:12.6f}'.format(kl_loss.item()))    	
-
-    	# psuedo labeling threshold
+        kl_loss.backward(retain_graph = True) 
+        
+        # psuedo labeling threshold
         mostLikelyProbs = np.asarray([probs[i, predictedLabels[i]].item() for  i in range(len(probs))])
         #print(mostLikelyProbs)
         toKeep = mostLikelyProbs > confidenceThresh
+        #print(sum(toKeep))
         if sum(toKeep) != 0:
             fakeClassifierLoss = criterion(predictionsFake[toKeep], predictedLabels[toKeep])  * 0.5 * advWeight
             fakeClassifierLoss.backward(retain_graph = True)
-        kl_loss.backward(retain_graph = True) 
+            #optC.step()
+            #optC.zero_grad()
+            
+            real_vs_fake = 5
+            real_num = int(real_vs_fake * sum(toKeep) / batch_size)
+            print(real_num)
+            for l in range(real_num):
+                inputs2, labels2 = sample_train_images_randomly()
+                inputs2 = inputs2.cuda()
+                labels2 = labels2.cuda()
+                predictions2 = netC(inputs2)
+                realClassifierLoss2 = criterion(predictions2, labels2) * 0.5
+                realClassifierLoss2.backward(retain_graph=True)
+                #optC.step()
+                #optC.zero_grad()
         optC.step()
+            
 
+        
     	# reset the gradients
         optD.zero_grad()
         optG.zero_grad()
@@ -1709,23 +1797,27 @@ def train(total_trained_samples):
 
     	# use test set of real image to guide the learning of GAN
         if steps % show_test_classifier_acc_per_iters == 0:
-            netC.eval()
+            test_acc, best_acc, best_epoch = test_all(epoch, best_acc, best_epoch)
+            print("Test acc {:6.2f} Best test acc {:6.2f} best epoch {:5d}".format(test_acc, best_acc, best_epoch))
+            netC.train()
+
+            #netC.eval()
     		# sample some test images
-            with torch.no_grad():
-                inputs, labels = sample_test_images_randomly()
-                inputs = inputs.cuda()
-                labels = labels.cuda()
-                outputs = netC(inputs)
+            #with torch.no_grad():
+            #    inputs, labels = sample_test_images_randomly()
+            #    inputs = inputs.cuda()
+            #    labels = labels.cuda()
+            #    outputs = netC(inputs)
     	
     			# accuracy
-                _, predicted = torch.max(outputs.data, 1)
-                total_test += labels.size(0)
-                correct_test += predicted.eq(labels.data).sum().item()
-                test_accuracy = 100 * correct_test / total_test
-                print(' test acc', test_accuracy)
-                logger.info('                             Test Accuracy (classifier) is {:6.2f}'.format(test_accuracy))
-                test_accuracy_logger.info('{:6.2f}'.format(test_accuracy))
-                netC.train()
+            #    _, predicted = torch.max(outputs.data, 1)
+            #    total_test += labels.size(0)
+            #    correct_test += predicted.eq(labels.data).sum().item()
+            #    test_accuracy = 100 * correct_test / total_test
+            #    print(' test acc', test_accuracy)
+            #    logger.info('                             Test Accuracy (classifier) is {:6.2f}'.format(test_accuracy))
+            #    test_accuracy_logger.info('{:6.2f}'.format(test_accuracy))
+            #    netC.train()
         # current state of the trained model
         state = {
             'epoch': epoch,
