@@ -1287,6 +1287,45 @@ def sample_test_images_randomly():
     return inputs, labels
 
 
+#6. Sequentially sample test images 
+def sample_test_images_sequentially(lb, ub):
+    inputs = []
+    labels = []
+    for i in range(batch_size):
+        #sz = len(test_list)
+        img_id = lb + i #random.randint(0, sz - 1)
+        img_path = test_list[img_id]
+        if not osp.exists(img_path):
+            print('Image ', img_path, 'does not exist?')
+        else:
+            img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE | cv2.IMREAD_IGNORE_ORIENTATION)
+            img = img / 256.0
+            #on my laptop it needs to be divided by 256 not sure elsewhere to be in the range[0, 1]
+            img = cv2.resize(img, (img_size, img_size))
+            img = img.astype(np.float32)
+            img = torch.from_numpy(img)
+            img = img.reshape((img.shape[0], img.shape[1], 1))
+            img = img.permute(2, 0, 1).data.cpu().numpy()
+            inputs.append(img)
+        this_label = test_labels[img_id]
+        labels.append(this_label)        
+
+    TEST_AUG = torch.nn.Sequential(
+            
+            #T.RandomResizedCrop((img_size, img_size), scale=(0.75, 1.33), ratio=(0.75, 1.3333333333333333)),
+            T.Normalize(
+                mean=torch.tensor([0.485]),
+                std=torch.tensor([0.229])),
+        )
+    inputs = np.array(inputs)
+    inputs = torch.from_numpy(inputs)
+    inputs = TEST_AUG(inputs)
+    labels = np.array(labels)
+    labels = labels.reshape((labels.shape[0]))
+    labels = torch.from_numpy(labels).long()
+    return inputs, labels
+
+
 
 #6.5 label smoothing
 class LabelSmoothingCrossEntropy(nn.Module):
@@ -1429,8 +1468,8 @@ def load_my_state_dict(model, state_dict):
 def load_model(model_path):
     ckpt = torch.load(model_path) 
     start_epoch = ckpt['epoch'] + 1
-    netD.load_state_dict(ckpt['netD'])    
-    netG.load_state_dict(ckpt['netG'])    
+    #netD.load_state_dict(ckpt['netD'])    
+    #netG.load_state_dict(ckpt['netG'])    
     netC.load_state_dict(ckpt['netC'])
     #optD.load_state_dict(ckpt['optD'])
     #optG.load_state_dict(ckpt['optG'])
@@ -1471,287 +1510,44 @@ def mmd(Mxx, Mxy, Myy, sigma = 1):
     	return -1
     return mmd    
 
-#6. Training loop
-def train(total_trained_samples):
-  netD.train()
-  netG.train()
-  total_train = 0
-  correct_train = 0
-  total_test = 0
-  correct_test = 0
-  #N = 0
-  #pynormal = torch.tensor([0.0]).cuda()
-  #avg_kl = torch.tensor([0.0]) # we want to maximize E_G[D_{KL}(p(y|x) || p(y))] 
-  #avg_kl = avg_kl.cuda()
-  acc_d_step = 0 # update generator per n D steps e.g. n = 5
-  acc_g_step = 0
-  train_g_more = True
-  train_d_more = not(train_g_more)
-  g_vs_d = 3
-  d_vs_g = 2
-  for epoch in range(start_epoch, epochs):
-    netC.train() #classifier
-
-    for steps in range(epoch_imgs // batch_size):
-        for p in netD.parameters():
-            p.requires_grad = True # to avoid computation 
-        start = torch.cuda.Event(enable_timing=True)
-        end = torch.cuda.Event(enable_timing=True)
-        start.record()
-        inputs, labels = sample_train_images_randomly()
-        inputs = inputs.cuda()
-        labels = labels.cuda()
+#6. Testing loop
+def test_all(file, epoch, best_accuracy, best_epoch):
+    netD.eval()
+    netG.eval()
+    total_test = 0
+    correct_test = 0
+    test_num = 200    
+    # sample some test images
+    with torch.no_grad():
+         for steps in range(test_num):
+             inputs, labels = sample_test_images_sequentially(steps * batch_size, (steps + 1) * batch_size)
+             inputs = inputs.cuda()
+             labels = labels.cuda()
+             outputs = netC(inputs)
         
-
-    	#print('sampling done')
-    	# create label arrays
-        true_label = torch.ones(batch_size, device=device)
-        fake_label = torch.zeros(batch_size, device=device)
-
-    	# noise vector z (r)
-        r = torch.randn(batch_size, 100, 1, 1, device=device)
-        fakeImageBatch = netG(r)
-    	#print(fakeImageBatch.shape)
-
-    	# train discriminator on real images
-        predictionsReal = netD(inputs)
-    	#print(inputs.shape)
-    	#print(predictionsReal.shape)
-        lossDiscriminator = bce_loss(predictionsReal, true_label) * 0.5 #labels = 1
-        lossDiscriminator.backward(retain_graph = True)
-
-    	# train discriminator on fake images
-        predictionsFake = netD(fakeImageBatch)
-        lossFake = bce_loss(predictionsFake, fake_label) #labels = 0
-        lossFake.backward(retain_graph = True)
-        ld = lossDiscriminator.item() + lossFake.item()
-
-        #optD.step()
-        if train_g_more:
-            if acc_g_step % g_vs_d == 0:
-                optD.step()
-                acc_d_step += 1
-        else:
-            optD.step()
-            acc_d_step += 1
-
-
-    	# train generator
-        for p in netD.parameters():
-            p.requires_grad = False # to avoid computation
-        optG.zero_grad()
-        predictionsFake = netD(fakeImageBatch)
-        lossGenerator = bce_loss(predictionsFake, true_label) * 0.05 #labels = 1
-        lg = lossGenerator.item()
-        #lossGenerator *= (ld / lossGenerator.item())
-        lossGenerator.backward(retain_graph = True)
-        # count steps of updating generating
-        #if acc_d_step % d_vs_g == 0:
-        if train_d_more:
-            if acc_d_step % d_vs_g == 0:
-                optG.step()
-                acc_g_step += 1
-        else:
-            optG.step()
-            acc_g_step += 1
-        torch.autograd.set_detect_anomaly(True)
-        fakeImageBatch = fakeImageBatch.detach().clone()
-
-        # Neural Style Transfer
-        style = torch.cat((inputs, inputs, inputs), dim=1)
-        content = torch.cat((fakeImageBatch, fakeImageBatch, fakeImageBatch), dim=1)
-        # optimized image given style: real and content: GAN images
-        opt = model_deconv(style, content)
-        style_layers = ['r11','r21','r31','r41', 'r51'] 
-        loss_layers = style_layers 
-        # Gram Matrix
-        loss_fns = [GramMSELoss()] * len(style_layers)
-        if torch.cuda.is_available():
-           loss_fns = [loss_fn.cuda() for loss_fn in loss_fns]
-        #these are good weights settings:
-        style_weights = [1e3/n**2 for n in [64,128,256,512,512]] #[1e0, 0.002, 5e-4, 1e-5, 0.01]
-        weights = style_weights 
-        style_targets = [GramMatrix()(A).detach() for A in vgg(style, style_layers)]
-
-        targets = style_targets
-        # USE Deconv opt -> loss network -> 
-        # style & content from deconv opt
-        out = vgg(opt, loss_layers)
-        layer_losses = [weights[a] * loss_fns[a](A, targets[a]) for a,A in enumerate(out)]
-        nst_loss = sum(layer_losses) * 0.0003
-        nst_loss.backward()
-        if steps % display_per_iters == 0:
-            print('Style: Real Content: GAN NST Style Gram Matrix Loss is {:6.2f}'.format(nst_loss.item()))
-        logger.info('Style: Real Content: GAN NST Style Gram Matrix Loss is {:6.2f}'.format(nst_loss.item()))
-        
-    	# train classifier on real data
-        predictions = netC(inputs)
-        realClassifierLoss = criterion(predictions, labels) * 0.5
-        realClassifierLoss.backward(retain_graph=True)
-
-    	# update classifier's gradient on real data
-        optC.step()
-        optC.zero_grad()
-
-    	# update the classifer on fake data
-    	# run classifer on fake directly
-        predictionsFake = netC(fakeImageBatch)
-    	# get a tensor of the labels that are most likely according to model
-        predictedLabels = torch.argmax(predictionsFake, 1) # -> [0 , 5, 9, 3, ...]
-        confidenceThresh = 0.65 #disable
-        klconfidenceThresh = 1e-6 # if prob is > klThresh include this in the expectation of KL term
-        
-        # 2 p(y|x)
-        probs = F.softmax(predictionsFake, dim=1)
-    	# Compute MMD score 
-        realImageBatch = inputs.detach().clone()
-    	# remember to detach this thing and clone and retain_graph = True for backprop
-        predictions_real = netC(realImageBatch)
-        probs_real = F.softmax(predictions_real, dim=1)
-        real = probs_real
-        fake = probs
-        Mxx = distance(real, real, False)
-        Mxy = distance(real, fake, False)
-        Myy = distance(fake, fake, False) 
-        cur_mmd = mmd(Mxx, Mxy, Myy)
-        if cur_mmd != -1:
-            cur_mmd = cur_mmd * 3
-            cur_mmd.require_grad = True
-            cur_mmd.backward(retain_graph = True)
-    		#print('			mmd    is {:12.6f}'.format(cur_mmd.item()))    	
-        else:
-            cur_mmd = torch.tensor(-1.0)
-            cur_mmd = cur_mmd.cuda()
-    	# Compute IS score (KL)
-    	# update p(y = normal)
-    	#pynormal = torch.tensor([0.0]).cuda()
-    	
-        #update all 15 classes p(Y=y) y \in [0, 15]
-        py = np.zeros(n_classes)
-        py = torch.from_numpy(py).cuda()
-        N = 0
-        for i in range(batch_size):
-            for j in range(n_classes): 
-                py[j] += probs[i, j]
-                py[j] = (py[j] * N + probs[i, j]) / (N + 1)
-            N += 1
-        py = py / batch_size
-    	#print('P(Y = y) = ', py)
-
-        # KL(p(y|x) || p(y)) within the batch
-        avg_kl = torch.tensor([0.0]) # we want to maximize E_G[D_{KL}(p(y|x) || p(y))] 
-        avg_kl = avg_kl.cuda()
-        for i in range(batch_size):
-            for j in range(n_classes): #Y = y   
-                pycondx = probs[i, j]
-                eps = 1e-20
-                kl = pycondx * ((pycondx + eps).log() - (py[j] + eps).log()) #py[j] = p(Y=j)
-                avg_kl += kl
-        avg_kl = avg_kl / batch_size
-    	
-    	# inception score D_KL loss 
-    	#   want to minimize so take -avg_kl min(-avg_kl) = max(avg_kl)
-        kl_loss = -avg_kl * 0.25
-        
-        kl_loss.require_grad = True
-    	#print('			kl loss is {:12.6f}'.format(kl_loss.item()))    	
-
-    	# psuedo labeling threshold
-        mostLikelyProbs = np.asarray([probs[i, predictedLabels[i]].item() for  i in range(len(probs))])
-        #print(mostLikelyProbs)
-        toKeep = mostLikelyProbs > confidenceThresh
-        if sum(toKeep) != 0:
-            fakeClassifierLoss = criterion(predictionsFake[toKeep], predictedLabels[toKeep])  * 0.5 * advWeight
-            fakeClassifierLoss.backward(retain_graph = True)
-        kl_loss.backward(retain_graph = True) 
-        optC.step()
-
-    	# reset the gradients
-        optD.zero_grad()
-        optG.zero_grad()
-        optC.zero_grad()
-
-        end.record()
-    	# Waits for everything to finish running
-
-        torch.cuda.synchronize()
-        total_trained_samples += batch_size
-    	# Logging
-        total_loss = lossDiscriminator + lossFake + cur_mmd + realClassifierLoss #
-        if sum(toKeep) != 0:
-            total_loss += fakeClassifierLoss
-        if steps % display_per_iters == 0:  
-            print('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} aKL is {:4.2f}  mmd is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lg, realClassifierLoss.item(), avg_kl.item(), cur_mmd.item(), total_trained_samples)) #lossDiscriminator.item(), lossFake.item(),
-        logger.info('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} aKL is {:4.2f}  mmd is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lg, realClassifierLoss.item(), avg_kl.item(), cur_mmd.item(), total_trained_samples))
-        discriminator_logger.info('{:6.2f}'.format(lossDiscriminator.item()))
-        fake_logger.info('{:6.2f}'.format(lossFake.item()))
-        generator_logger.info('{:6.2f}'.format(lossGenerator.item()))
-        real_classifier_logger.info('{:6.2f}'.format(realClassifierLoss.item()))
-        avg_kl_logger.info('{:6.2f}'.format(avg_kl.item()))
-        if sum(toKeep) != 0:
-           fake_classifier_logger.info('{:6.2f}'.format(fakeClassifierLoss.item()))
-        total_logger.info('{:6.2f}'.format(total_loss.item()))
-
-    	# save gan image
-        if steps % save_gan_per_iters == 0:  
-            gridOfFakeImages = torchvision.utils.make_grid(fakeImageBatch.cpu())
-            torchvision.utils.save_image(gridOfFakeImages, save_gan_img_folder_prefix + str(epoch) + '_' + str(steps) + '.png')
-        if steps % show_train_classifier_acc_per_iters == 0:
-            netC.eval()
-    		# accuracy
-            _, predicted = torch.max(predictions, 1)
-            total_train += labels.size(0)
-            correct_train += predicted.eq(labels.data).sum().item()
-            train_accuracy = 100 * correct_train / total_train
-            logger.info('                             Train Accuracy (classifier) is {:6.2f}'.format(train_accuracy))
-            train_accuracy_logger.info('{:6.2f}'.format(train_accuracy))
-            netC.train()
-
-    	# use test set of real image to guide the learning of GAN
-        if steps % show_test_classifier_acc_per_iters == 0:
-            netC.eval()
-    		# sample some test images
-            with torch.no_grad():
-                inputs, labels = sample_test_images_randomly()
-                inputs = inputs.cuda()
-                labels = labels.cuda()
-                outputs = netC(inputs)
-    	
-    			# accuracy
-                _, predicted = torch.max(outputs.data, 1)
-                total_test += labels.size(0)
-                correct_test += predicted.eq(labels.data).sum().item()
-                test_accuracy = 100 * correct_test / total_test
-                print(' test acc', test_accuracy)
-                logger.info('                             Test Accuracy (classifier) is {:6.2f}'.format(test_accuracy))
-                test_accuracy_logger.info('{:6.2f}'.format(test_accuracy))
-                netC.train()
-        # current state of the trained model
-        state = {
-            'epoch': epoch,
-            'iter': steps, 
-            'netD': netD.state_dict(),
-            'netG': netG.state_dict(),
-            'netC': netC.state_dict(),
-            'optD': optD.state_dict(),
-            'optG': optG.state_dict(),
-            'optC': optC.state_dict(),
-            'total_trained_samples': total_trained_samples
-                }
-        if (steps * batch_size) % save_per_samples == 0:
-            model_file = '../models_apr28/' + model_ckpt_prefix + 'bak_' + str(epoch + 1) + '_' + str((steps * batch_size) // save_per_samples) + '.pth'
-            torch.save(state, model_file)
-
-    model_file = '../models_apr28/' + model_ckpt_prefix + 'epo_' + str(epoch + 1) + '.pth'
-    torch.save(state, model_file)
-  return total_trained_samples
+             # accuracy
+             _, predicted = torch.max(outputs.data, 1)
+             total_test += labels.size(0)
+             correct_test += predicted.eq(labels.data).sum().item()
+             test_accuracy = 100 * correct_test / total_test
+    print('Epoch {:5d} test acc {:6.2f} Current Best {:6.2f} \n'.format(epoch, test_accuracy, best_accuracy))
+    file.write('Epoch {:5d} test acc {:6.2f} Current Best {:6.2f} \n'.format(epoch, test_accuracy, best_accuracy))
+    if test_accuracy > best_accuracy:
+       best_accuracy = test_accuracy
+       best_epoch = epoch
+    return test_accuracy, best_accuracy, best_epoch     
 total_trained_samples = 0
 torch.manual_seed(42)
-resume_training = True
 start_epoch = 0
-if resume_training:
-	start_epoch, total_trained_samples = load_model('../models_apr28/ecgan-chest-xray14epo_98.pth')
-total_trained_samples = train(total_trained_samples)
+file = open('best.txt', 'w')
+best_acc = 0
+best_epoch = 0
+for epoch in range(36, 100):
+    start_epoch, total_trained_samples = load_model('../models_apr28/ecgan-chest-xray14epo_' + str(epoch) + '.pth')
+    netC.eval() #classifier
+    test_acc, best_acc, best_epoch = test_all(file, epoch, best_acc, best_epoch)
+    
+file.close()
  
             
   
