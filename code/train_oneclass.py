@@ -1403,13 +1403,13 @@ netC = DataParallelModel(netC).cuda()
 blr_d = 0.00025
 blr_g = 0.00025
 blr_c = 0.0005
-alpha_g = 0.5
-alpha_d = 1.0
+alpha_g = 1.0
+alpha_d = 0.5
 alpha_c = 0.0
 alpha_nst = 0.001
 train_g_more = True
 train_d_more = not(train_g_more)
-g_vs_d = 2
+g_vs_d = 4
 d_vs_g = 3
 optD = optim.Adam(netD.parameters(), lr=blr_d, betas=(0.5, 0.999), weight_decay = 1e-3)
 optG = optim.Adam(netG.parameters(), lr=blr_g, betas=(0.5, 0.999))
@@ -1604,7 +1604,7 @@ def train(total_trained_samples):
 
     	# train discriminator on fake images
         predictionsFake = netD(fakeImageBatch)
-        lossFake = bce_loss(predictionsFake, fake_label) #labels = 0
+        lossFake = bce_loss(predictionsFake, fake_label) * alpha_d #labels = 0
         lossFake.backward(retain_graph = True)
         ld = lossDiscriminator.item() + lossFake.item()
 
@@ -1623,7 +1623,7 @@ def train(total_trained_samples):
             p.requires_grad = False # to avoid computation
         optG.zero_grad()
         predictionsFake = netD(fakeImageBatch)
-        lossGenerator = bce_loss(predictionsFake, true_label) * alpha_d #labels = 1
+        lossGenerator = bce_loss(predictionsFake, true_label) * alpha_g #labels = 1
         lg = lossGenerator.item()
         #lossGenerator *= (ld / lossGenerator.item())
         lossGenerator.backward(retain_graph = True)
@@ -1733,7 +1733,7 @@ def train(total_trained_samples):
     	
     	# inception score D_KL loss 
     	#   want to minimize so take -avg_kl min(-avg_kl) = max(avg_kl)
-        kl_loss = -avg_kl * 0.25
+        kl_loss = -avg_kl * 0#0.25
         
         kl_loss.require_grad = True
     	#print('			kl loss is {:12.6f}'.format(kl_loss.item()))    	
@@ -1854,7 +1854,7 @@ torch.manual_seed(42)
 resume_training = True
 start_epoch = 0
 if resume_training:
-	start_epoch, total_trained_samples = load_model('../models_effusion/ecgan-chest-xray14epo_12.pth')
+	start_epoch, total_trained_samples = load_model('../models_effusion/ecgan-chest-xray14epo_46.pth')
 total_trained_samples = train(total_trained_samples)
  
             

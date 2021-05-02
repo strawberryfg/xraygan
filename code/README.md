@@ -48,4 +48,16 @@ This one shows training accuracy on real data.
 	python train_apr27.py
 ```
 
+
+4. Train a vanilla Res50 on all classes 
+
+    **One model for all classes only classification loss**
+    
+    Epoch 102 Best Per Class Acc   0.00   0.25  58.28   5.58   0.00   0.23   0.00  10.23   2.97  22.92  73.59  29.37  38.29   1.29  22.22
+ 
+ 
+```
+	python train_all_classes_cla_vanilla.py
+```
+
 ### Notes
