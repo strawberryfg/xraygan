@@ -55,7 +55,7 @@ This one shows training accuracy on real data.
     
     Epoch 99 Per Class Acc 0.25 44.59 5.41 0.00 0.45 0.22 21.59 0.95 7.92 69.26 14.19 19.43 15.21 22.22  
     
-    | Pathology | Id   |  Acc (%)  | 
+| Pathology | Id   |  Acc (%)  | 
 |:-:|:-:|:-:|
 | Atelectasis     | 0 | 0.25 |
 | Cardiomegaly | 1 | 44.59  |
