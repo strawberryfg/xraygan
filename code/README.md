@@ -67,12 +67,14 @@ To test
 
 5. Train with pseudo labels (confidenceThresh = 0.7)
 
+
 ```
 	python train_allclasses.py
 ```
 
-    Epoch 105 Per Class Acc 0.00 6.69 0.09 0.00 0.00 0.00 48.86 0.00 0.00 40.69 0.99 24.00 0.00 57.78  
 
-    Th = 0.8
+   Epoch 105 Per Class Acc 0.00 6.69 0.09 0.00 0.00 0.00 48.86 0.00 0.00 40.69 0.99 24.00 0.00 57.78  
+
+   Th = 0.8
 
 ### Notes
