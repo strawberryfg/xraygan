@@ -111,5 +111,28 @@
 	| Hernia | 13 | 57.78 |
 
    	Th = 0.8
+	```
+		python train_allclasses_thresh0.8.py
+	```
+
+	
+	| Pathology | Id   |  Acc (%)  | 
+	|:-:|:-:|:-:|
+	| Atelectasis     | 0 | 0.00 |
+	| Cardiomegaly | 1 | 4.14  |
+	| Effusion | 2 | 0.00 |
+	| Infiltration | 3 | 0.00 |
+	| Mass | 4 | 0.00 |
+	| Nodule | 5 | 0.00 |
+	| Pneumonia | 6 | 39.77  |
+	| Pneumothorax | 7 | 0.00 |
+	| Consolidation | 8 | 0.21  |
+	| Edema | 9 | 51.52 | 
+	| Emphysema | 10 |  12.87 |
+	| Fibrosis | 11 | 10.29 |
+	| Pleural Thickening | 12 | 0.00  |
+	| Hernia | 13 | 66.67 |
+	
+	
 
 ### Notes
