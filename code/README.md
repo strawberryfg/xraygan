@@ -53,11 +53,26 @@ This one shows training accuracy on real data.
 
     **One model for all classes only classification loss**
     
-    Epoch 102 Best Per Class Acc   0.00   0.25  58.28   5.58   0.00   0.23   0.00  10.23   2.97  22.92  73.59  29.37  38.29   1.29  22.22
+    Epoch 99 Per Class Acc 0.25 44.59 5.41 0.00 0.45 0.22 21.59 0.95 7.92 69.26 14.19 19.43 15.21 22.22  
  
  
 ```
 	python train_all_classes_cla_vanilla.py
 ```
+
+To test
+```
+	python test_all_classes_cla_vanilla.py
+```
+
+5. Train with pseudo labels (confidenceThresh = 0.7)
+
+```
+	python train_allclasses.py
+```
+
+    Epoch 105 Per Class Acc 0.00 6.69 0.09 0.00 0.00 0.00 48.86 0.00 0.00 40.69 0.99 24.00 0.00 57.78  
+
+    Th = 0.8
 
 ### Notes
