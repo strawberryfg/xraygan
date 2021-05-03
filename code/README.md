@@ -27,7 +27,9 @@
 	```
 
 
-2. Show test accuracy while training to guide the learning of GAN. Changed adversarial weight to *0.25*. **Included batch-wise Inception Score and Maximum Mean Discrepancy as part of loss.**
+2. Show test accuracy while training to guide the learning of GAN. Changed adversarial weight to *0.25*. 
+	
+	**Included batch-wise Inception Score and Maximum Mean Discrepancy as part of loss.**
 
 	```
 		python train_apr19.py
