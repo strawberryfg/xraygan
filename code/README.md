@@ -94,6 +94,24 @@ To test
 
    Epoch 105 Per Class Acc 0.00 6.69 0.09 0.00 0.00 0.00 48.86 0.00 0.00 40.69 0.99 24.00 0.00 57.78  
 
+
+| Pathology | Id   |  Acc (%)  | 
+|:-:|:-:|:-:|
+| Atelectasis     | 0 | 0.00 |
+| Cardiomegaly | 1 | 6.69  |
+| Effusion | 2 | 0.09 |
+| Infiltration | 3 | 0.00 |
+| Mass | 4 | 0.00 |
+| Nodule | 5 | 0.00 |
+| Pneumonia | 6 | 48.86  |
+| Pneumothorax | 7 | 0.00 |
+| Consolidation | 8 | 0.00  |
+| Edema | 9 | 40.69 | 
+| Emphysema | 10 |  0.99 |
+| Fibrosis | 11 | 24.00 |
+| Pleural Thickening | 12 | 0.00  |
+| Hernia | 13 | 57.78 |
+
    Th = 0.8
 
 ### Notes
