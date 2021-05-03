@@ -54,6 +54,25 @@ This one shows training accuracy on real data.
     **One model for all classes only classification loss**
     
     Epoch 99 Per Class Acc 0.25 44.59 5.41 0.00 0.45 0.22 21.59 0.95 7.92 69.26 14.19 19.43 15.21 22.22  
+    
+    | Pathology | Id   |  Acc (%)  | 
+|:-:|:-:|:-:|
+| Atelectasis     | 0 | 0.25 |
+| Cardiomegaly | 1 | 44.59  |
+| Effusion | 2 | 5.41 |
+| Infiltration | 3 | 0.00 |
+| Mass | 4 | 0.45 |
+| Nodule | 5 | 0.22 |
+| Pneumonia | 6 | 21.59  |
+| Pneumothorax | 7 | 0.95 |
+| Consolidation | 8 | 7.92  |
+| Edema | 9 | 69.26 | 
+| Emphysema | 10 |  14.19 |
+| Fibrosis | 11 | 19.43 |
+| Pleural Thickening | 12 | 15.21  |
+| Hernia | 13 | 22.22 |
+
+
  
  
 ```
