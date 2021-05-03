@@ -76,12 +76,12 @@
  
  
 	```
-		python train_all_classes_cla_vanilla.py
+		python train_allclasses_cla_vanilla.py
 	```
 
 	To test (similarly for the following with "test" prefixes)
 	```
-		python test_all_classes_cla_vanilla.py
+		python test_allclasses_cla_vanilla.py
 	```
 
 5. Train with pseudo labels 
