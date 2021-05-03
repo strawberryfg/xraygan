@@ -44,11 +44,10 @@
 	    b. maximum mean discrepancy (MMD)
 	
 	    c. style transfer gram matrix loss (**Style Reconstruction Loss** in the **Perceptual** paper)
- 
- 
-	    ```
+	    
+	  ```
 		python train_apr27.py
-	    ```
+	  ```
 
 
 4. Train a vanilla Res50 on all classes 
