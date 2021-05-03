@@ -33,9 +33,9 @@
 		python train_apr19.py
 	```
 
-3. Train on Chest Xray 14 dataset 
+3. Train on Chest X-ray 14 dataset 
 
-    **One model for all classes**
+    **One model for all classes w/ all the losses (Full Pipeline)**
     
 	    a. inception score (KL)
 	
@@ -51,7 +51,7 @@
 
 4. Train a vanilla Res50 on all classes 
 
-    **One model for all classes only classification loss**
+    **One model for all classes w/ classification loss only**
     
     
 	| Pathology | Id   |  Acc (%)  | 
@@ -78,12 +78,14 @@
 		python train_all_classes_cla_vanilla.py
 	```
 
-	To test
+	To test (similarly for the following with "test" prefixes)
 	```
 		python test_all_classes_cla_vanilla.py
 	```
 
 5. Train with pseudo labels 
+
+    **Pseudo label confidence threshold**
 
 
 	```
@@ -137,7 +139,7 @@
 	c) Thresh = 0.9
 	
 	```
-		python train_allclasses_thresh0.8.py
+		python train_allclasses_thresh0.9.py
 	```
 
 	
