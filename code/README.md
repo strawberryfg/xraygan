@@ -83,7 +83,7 @@
 		python test_all_classes_cla_vanilla.py
 	```
 
-5. Train with pseudo labels (confidenceThresh = 0.7)
+5. Train with pseudo labels 
 
 
 	```
@@ -91,26 +91,51 @@
 	```
 
 
-        a) 
+      a) Thresh = 0.7
 
 	| Pathology | Id   |  Acc (%)  | 
 	|:-:|:-:|:-:|
 	| Atelectasis     | 0 | 0.00 |
-	| Cardiomegaly | 1 | 6.69  |
+	| Cardiomegaly | 1 | 9.24  |
 	| Effusion | 2 | 0.09 |
 	| Infiltration | 3 | 0.00 |
 	| Mass | 4 | 0.00 |
 	| Nodule | 5 | 0.00 |
-	| Pneumonia | 6 | 48.86  |
-	| Pneumothorax | 7 | 0.00 |
-	| Consolidation | 8 | 0.00  |
-	| Edema | 9 | 40.69 | 
-	| Emphysema | 10 |  0.99 |
-	| Fibrosis | 11 | 24.00 |
-	| Pleural Thickening | 12 | 0.00  |
-	| Hernia | 13 | 57.78 |
+	| Pneumonia | 6 | 27.27  |
+	| Pneumothorax | 7 | 0.11 |
+	| Consolidation | 8 | 4.38  |
+	| Edema | 9 | 60.17 | 
+	| Emphysema | 10 |  7.92 |
+	| Fibrosis | 11 | 14.29 |
+	| Pleural Thickening | 12 | 0.65  |
+	| Hernia | 13 | 77.78 |
 
-   	Th = 0.8
+      b) Thresh = 0.8
+	
+	```
+		python train_allclasses_thresh0.8.py
+	```
+
+	
+	| Pathology | Id   |  Acc (%)  | 
+	|:-:|:-:|:-:|
+	| Atelectasis     | 0 | 0.25 |
+	| Cardiomegaly | 1 | 14.01  |
+	| Effusion | 2 | 0.17 |
+	| Infiltration | 3 | 0.00 |
+	| Mass | 4 | 0.00 |
+	| Nodule | 5 | 0.00 |
+	| Pneumonia | 6 | 37.50  |
+	| Pneumothorax | 7 | 0.42 |
+	| Consolidation | 8 | 1.88  |
+	| Edema | 9 | 52.81 | 
+	| Emphysema | 10 |  8.58 |
+	| Fibrosis | 11 | 18.29 |
+	| Pleural Thickening | 12 | 0.65  |
+	| Hernia | 13 | 57.78 |
+	
+	c) Thresh = 0.9
+	
 	```
 		python train_allclasses_thresh0.8.py
 	```
@@ -119,19 +144,20 @@
 	| Pathology | Id   |  Acc (%)  | 
 	|:-:|:-:|:-:|
 	| Atelectasis     | 0 | 0.00 |
-	| Cardiomegaly | 1 | 4.14  |
-	| Effusion | 2 | 0.00 |
+	| Cardiomegaly | 1 | 9.81  |
+	| Effusion | 2 | 0.17 |
 	| Infiltration | 3 | 0.00 |
 	| Mass | 4 | 0.00 |
 	| Nodule | 5 | 0.00 |
-	| Pneumonia | 6 | 39.77  |
-	| Pneumothorax | 7 | 0.00 |
-	| Consolidation | 8 | 0.21  |
-	| Edema | 9 | 51.52 | 
-	| Emphysema | 10 |  12.87 |
-	| Fibrosis | 11 | 10.29 |
-	| Pleural Thickening | 12 | 0.00  |
-	| Hernia | 13 | 66.67 |
+	| Pneumonia | 6 | 36.36  |
+	| Pneumothorax | 7 | 0.53 |
+	| Consolidation | 8 | 3.55  |
+	| Edema | 9 | 45.89 | 
+	| Emphysema | 10 |  9.57 |
+	| Fibrosis | 11 | 17.14 |
+	| Pleural Thickening | 12 | 0.97  |
+	| Hernia | 13 | 62.22 |
+	
 	
 	
 
