@@ -57,20 +57,10 @@
     
 	| Pathology | Id   |  Acc (%)  | 
 	|:-:|:-:|:-:|
-	| Atelectasis     | 0 | 0.25 |
-	| Cardiomegaly | 1 | 44.59  |
-	| Effusion | 2 | 5.41 |
-	| Infiltration | 3 | 0.00 |
-	| Mass | 4 | 0.45 |
-	| Nodule | 5 | 0.22 |
-	| Pneumonia | 6 | 21.59  |
-	| Pneumothorax | 7 | 0.95 |
-	| Consolidation | 8 | 7.92  |
-	| Edema | 9 | 69.26 | 
-	| Emphysema | 10 |  14.19 |
-	| Fibrosis | 11 | 19.43 |
-	| Pleural Thickening | 12 | 15.21  |
-	| Hernia | 13 | 22.22 |
+	
+	| Pneumonia | 7 | 21.59  |
+	| Edema | 10 | 69.26 | 
+	| Hernia | 14 | 22.22 |
 
 
  
@@ -98,20 +88,9 @@
 
 	| Pathology | Id   |  Acc (%)  | 
 	|:-:|:-:|:-:|
-	| Atelectasis     | 0 | 0.00 |
-	| Cardiomegaly | 1 | 9.24  |
-	| Effusion | 2 | 0.09 |
-	| Infiltration | 3 | 0.00 |
-	| Mass | 4 | 0.00 |
-	| Nodule | 5 | 0.00 |
-	| Pneumonia | 6 | 27.27  |
-	| Pneumothorax | 7 | 0.11 |
-	| Consolidation | 8 | 4.38  |
-	| Edema | 9 | 60.17 | 
-	| Emphysema | 10 |  7.92 |
-	| Fibrosis | 11 | 14.29 |
-	| Pleural Thickening | 12 | 0.65  |
-	| Hernia | 13 | 77.78 |
+	| Pneumonia | 7 | 27.27  |
+	| Edema | 10 | 60.17 | 
+	| Hernia | 14 | 77.78 |
 
       b) Thresh = 0.8
 	
@@ -122,20 +101,9 @@
 	
 	| Pathology | Id   |  Acc (%)  | 
 	|:-:|:-:|:-:|
-	| Atelectasis     | 0 | 0.25 |
-	| Cardiomegaly | 1 | 14.01  |
-	| Effusion | 2 | 0.17 |
-	| Infiltration | 3 | 0.00 |
-	| Mass | 4 | 0.00 |
-	| Nodule | 5 | 0.00 |
-	| Pneumonia | 6 | 37.50  |
-	| Pneumothorax | 7 | 0.42 |
-	| Consolidation | 8 | 1.88  |
-	| Edema | 9 | 52.81 | 
-	| Emphysema | 10 |  8.58 |
-	| Fibrosis | 11 | 18.29 |
-	| Pleural Thickening | 12 | 0.65  |
-	| Hernia | 13 | 57.78 |
+	| Pneumonia | 7 | 37.50  |
+	| Edema | 10 | 52.81 | 
+	| Hernia | 14 | 57.78 |
 	
 	c) Thresh = 0.9
 	
@@ -146,20 +114,9 @@
 	
 	| Pathology | Id   |  Acc (%)  | 
 	|:-:|:-:|:-:|
-	| Atelectasis     | 0 | 0.00 |
-	| Cardiomegaly | 1 | 9.81  |
-	| Effusion | 2 | 0.17 |
-	| Infiltration | 3 | 0.00 |
-	| Mass | 4 | 0.00 |
-	| Nodule | 5 | 0.00 |
-	| Pneumonia | 6 | 36.36  |
-	| Pneumothorax | 7 | 0.53 |
-	| Consolidation | 8 | 3.55  |
-	| Edema | 9 | 45.89 | 
-	| Emphysema | 10 |  9.57 |
-	| Fibrosis | 11 | 17.14 |
-	| Pleural Thickening | 12 | 0.97  |
-	| Hernia | 13 | 62.22 |
+	| Pneumonia | 7 | 36.36  |
+	| Edema | 10 | 45.89 | 
+	| Hernia | 14 | 62.22 |
 	
 	
 	
