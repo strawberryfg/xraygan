@@ -1075,8 +1075,8 @@ class colorlogger():
 #5. Configurations and arguments
 root_dir = "E:/ml/" # chest x-ray 14
 n_classes = 15 # 0 is normal : no finding
-batch_size = 12
-img_size = 128
+batch_size = 20
+img_size = 224
 display_per_iters = 8 # how many iterations before outputting to the console window
 save_gan_per_iters = 5000000000 # save gan images per this iterations
 save_gan_img_folder_prefix = root_dir + "train_fake/"
@@ -1577,7 +1577,7 @@ def test_all(epoch, best_accuracy, best_epoch, best_per_class_acc):
     netC.eval()
     total_test = 0
     correct_test = 0
-    test_num = int(398 * 20 / 12)
+    test_num = 398
     total_test_per_class = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     correct_test_per_class = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     per_class_acc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]

@@ -50,7 +50,7 @@
 	  ```
 
 
-4. Train a vanilla Res50 on all classes 
+4. *Baseline* Train a vanilla Res50 on all classes 
 
     **One model for all classes w/ classification loss only**
     
@@ -73,7 +73,7 @@
 		python test_allclasses_cla_vanilla.py
 	```
 
-5. Train with pseudo labels 
+5. *Ablation 1* Train with pseudo labels 
 
     **Pseudo label confidence threshold**
 
@@ -116,8 +116,31 @@
 	| Pneumonia | 7 | 56.52  | 0.43 |
 	| Edema | 10 | 21.08 | 0.82 |
 	| Hernia | 14 | 70.59 | 0.93 |
+
+6. *Ablation 2* Train with simplest GAN losses + IS loss + MMD loss + NST loss 
 	
+	- + IS
 	
+	```
+		python train_allclasses_wis_only.py
+	```
+
+	| Pathology | Id   |  Acc (%)  |  AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | 39.13  | 0.68 |
+	| Edema | 10 | 87.03 | 0.80 |
+	| Hernia | 14 | 61.76 | 0.91 |
 	
+	- + IS + MMD
+	
+	```
+		python train_allclasses_wis_mmd.py
+	```
+	
+	| Pathology | Id   |  Acc (%)  |  AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | 47.83  | 0.50 |
+	| Edema | 10 | 39.46 | 0.82 |
+	| Hernia | 14 | 67.65 | 0.81 |
 
 ### Notes

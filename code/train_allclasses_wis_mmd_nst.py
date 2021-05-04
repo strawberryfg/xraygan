@@ -2,6 +2,7 @@ import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 import math
 import numpy as np
+import sklearn.metrics as metrics
 from scipy import linalg
 from os import path as osp
 import cv2
@@ -9,6 +10,24 @@ import random
 import matplotlib.pyplot as plt
 import pdb
 
+# Hyper-parameters
+blr_d = 0.0005
+blr_g = 0.001
+blr_c = 0.0005
+alpha_g = 2.0
+alpha_d = 0.5
+alpha_kl = 0.25
+alpha_mmd = 3
+alpha_c = 1.0
+alpha_nst = 0.003
+confidenceThresh = 0.75 #disable
+train_g_more = True
+train_d_more = not(train_g_more)
+g_vs_d = 3
+d_vs_g = 3
+per_class_sample = True
+weights_prefix = '../models_allclasses_wis_mmd_nst/'
+weights_middle_name = "_allclasses_is_mmd_epo_"
 #0. torch imports
 import torch
 from torch.utils.data import DataLoader,Dataset
@@ -1014,13 +1033,6 @@ class ResNetBackbone(nn.Module):
         self.load_my_state_dict(org_resnet)
         print("Initialize resnet from model zoo")
 
-        for m in self.modules():
-           if isinstance(m, nn.Linear):
-              nn.init.kaiming_normal(m.weight)
-              #nn.init.constant_(m.bias, 0.1)
-              #nn.init.normal_(m.weight, std=0.01)
-           
-
 #4. logging
 import logging
 import os
@@ -1078,11 +1090,12 @@ n_classes = 15 # 0 is normal : no finding
 batch_size = 12
 img_size = 128
 display_per_iters = 8 # how many iterations before outputting to the console window
-save_gan_per_iters = 5000000000 # save gan images per this iterations
-save_gan_img_folder_prefix = root_dir + "train_fake/"
-show_train_classifier_acc_per_iters = 1000 # how many iterations before showing train acc of classifier
-show_test_classifier_acc_per_iters = 150 # 
-save_per_samples = 8000 # save a checkpoint per forward run of this number of samples
+save_gan_per_iters = 5 # save gan images per this iterations
+save_gan_img_folder_prefix = root_dir + "train_fake_allclasses_wis_mmd_nst/"
+show_train_classifier_acc_per_iters = 1000000 # how many iterations before showing train acc of classifier
+# Deprecated in favor of per-epoch test
+show_test_classifier_acc_per_iters = 290 # 
+save_per_samples = 2000 # save a checkpoint per forward run of this number of samples
 model_ckpt_prefix = 'ecgan-chest-xray14'
 
 use_label_smoothing = False
@@ -1101,6 +1114,22 @@ suffix = 'images/'
 image_index_list = []    
 labels_list = []
 img_index_2_label_dict = {}
+label_id_dict = { 0: 'No Finding',
+                  1:  'Atelectasis', 
+                  2:  'Cardiomegaly', 
+                  3:  'Effusion', 
+                  4:  'Infiltration', 
+                  5:  'Mass', 
+                  6:  'Nodule', 
+                  7:  'Pneumonia', 
+                  8:  'Pneumothorax', 
+                  9:  'Consolidation', 
+                 10:  'Edema', 
+                 11: 'Emphysema', 
+                 12: 'Fibrosis', 
+                 13: 'Pleural_Thickening', 
+                 14: 'Hernia'}
+
 label_name_dict = { 'No Finding': 0,
                     'Atelectasis': 1, 
                     'Cardiomegaly': 2, 
@@ -1121,8 +1150,8 @@ train_val_list = []
 test_list = []
 train_val_labels = []
 test_labels = []
-
 train_val_per_label_list = []
+
 def load_image_index_and_list():
     #1. image index list (all) e.g. 00000583_023.png
     f_list = open(image_index_list_file, "r")
@@ -1148,6 +1177,12 @@ def build_img_2_label_dict():
         img_index_2_label_dict.update({img_id: label})
 
 label_train_cnt = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+# True useful labels
+usable_label_arr = np.zeros(n_classes)
+usable_label_arr[7] = 1
+usable_label_arr[10] = 1
+usable_label_arr[14] = 1
     
 def load_train_val_list():
     #1. original train_val_list.txt
@@ -1162,8 +1197,10 @@ def load_train_val_list():
         find_or = this_label.find('|')        
         if find_or != -1:
             continue
-
         this_label = label_name_dict[this_label]
+        if usable_label_arr[this_label] == 0:        
+           continue  
+        
         #if this_label == 0: #imbalance 
         #   continue # no finding    
         # See if this image exists        
@@ -1192,6 +1229,9 @@ def load_test_list():
         if find_or != -1:
             continue
         this_label = label_name_dict[this_label]
+        if usable_label_arr[this_label] == 0:        
+           continue  
+        
         if this_label == 0:
             continue #ignore no finding
         # See if this image exists        
@@ -1204,7 +1244,23 @@ def load_test_list():
             test_labels.append(this_label)
     print('There are {:6d} images in test.\n'.format(len(test_list)))
     #print(test_labels)
+    print("Len of test list: {:5d}".format(len(test_list)))
     f_list.close()
+
+
+def load_gan_and_vanilla(model_path_gan, model_path_cla):
+    ckpt = torch.load(model_path_gan) 
+    start_epoch = ckpt['epoch'] + 1
+    netD.load_state_dict(ckpt['netD'])    
+    netG.load_state_dict(ckpt['netG'])    
+    
+    total_trained_samples = ckpt['total_trained_samples']
+
+    ckpt = torch.load(model_path_cla)     
+    netC.load_state_dict(ckpt['netC'])    
+    
+
+    return start_epoch, total_trained_samples
 
 
 def store_per_label_train_list():
@@ -1213,14 +1269,16 @@ def store_per_label_train_list():
     for i in range(len(train_val_list)):
         cur_label = train_val_labels[i]
         train_val_per_label_list[cur_label].append(i)
-	
+    for cla in range(n_classes):
+        print("Class {:3d} {:20s} #(samples) {:5d}".format(cla, label_id_dict[cla], len(train_val_per_label_list[cla])))
+    print("Start training ==========================\n\n")  
 load_image_index_and_list()
 build_img_2_label_dict()
 load_train_val_list()
 load_test_list()
 store_per_label_train_list()
 # Where to log outputs
-logger = colorlogger("logs/", log_name="logs_all.txt")
+logger = colorlogger("logs/", log_name="logs_all_is.txt")
 discriminator_logger = colorlogger("logs/", log_name="logs_D(x);1.txt")
 fake_logger = colorlogger("logs/", log_name="logs_D(G(z));0.txt")
 generator_logger = colorlogger("logs/", log_name="logs_D(G(z));1.txt")
@@ -1234,12 +1292,10 @@ avg_kl_logger = colorlogger("logs/", log_name="logs_avg_kl.txt")
 epochs = 1000
 epoch_imgs = 3483 #how many images are defined as an epoch
 
-
 #6. Randomly sample training images 
 def sample_train_images_randomly():
     inputs = []
     labels = []
-    per_class_sample = True
     for i in range(batch_size):
         if per_class_sample:
             per_class_sample_prob = []
@@ -1247,7 +1303,10 @@ def sample_train_images_randomly():
                 per_class_sample_prob.append(0.0)
             sum = 0.0
             for cla in range(n_classes):
+                if usable_label_arr[cla] == 0:                
+                    continue
                 per_class_sample_prob[cla] = 1.0 / len(train_val_per_label_list[cla])
+                #per_class_sample_prob[cla] = 1.0 / float(n_classes)
                 sum += per_class_sample_prob[cla]
             for cla in range(n_classes):
                 per_class_sample_prob[cla] /= sum
@@ -1256,6 +1315,8 @@ def sample_train_images_randomly():
             x = random.randint(0, mul_factor - 1)
             sum = 0.0
             for cla in range(n_classes):
+                if usable_label_arr[cla] == 0:                
+                    continue
                 lb = sum * mul_factor
                 ub = (sum + per_class_sample_prob[cla]) * mul_factor
                 if lb <= x and x < ub:
@@ -1270,7 +1331,7 @@ def sample_train_images_randomly():
             img_id = random.randint(0, sz - 1)
         img_path = train_val_list[img_id]
         if not osp.exists(img_path):
-        	print('Image ', img_path, 'does not exist?')
+            print('Image ', img_path, 'does not exist?')
         else:
             img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE | cv2.IMREAD_IGNORE_ORIENTATION)
             img = img / 256.0
@@ -1446,20 +1507,10 @@ netG = DataParallelModel(netG).cuda()
 netD = DataParallelModel(netD).cuda()
 netC = DataParallelModel(netC).cuda()
 
-# optimizers 
-blr_d = 0.00005
-blr_g = 0.0002
-blr_c = 0.0003
-alpha_g = 0.0
-alpha_d = 0.0
-alpha_c = 1.0
-alpha_nst = 0.0
-alpha_kl = 0.0
-alpha_mmd = 0.0
+
 optD = optim.Adam(netD.parameters(), lr=blr_d, betas=(0.5, 0.999), weight_decay = 1e-3)
 optG = optim.Adam(netG.parameters(), lr=blr_g, betas=(0.5, 0.999))
-optC = optim.RMSprop(netC.parameters(), lr=blr_c, alpha=0.99, eps=1e-08, weight_decay=1e-3, momentum=0, centered=False)
-#optC = optim.Adam(netC.parameters(), lr=blr_c, betas=(0.5, 0.999), weight_decay = 1e-3)
+optC = optim.Adam(netC.parameters(), lr=blr_c, betas=(0.5, 0.999), weight_decay = 1e-3)
 
 # losses 
 # 1) for discriminator and generator)
@@ -1472,7 +1523,7 @@ else:
     criterion = nn.CrossEntropyLoss() #LabelSmoothingCrossEntropy() #
 criterion = DataParallelCriterion(criterion, device_ids=[0])
 
-advWeight = 0.0 # adversarial weight
+advWeight = 0.125 # adversarial weight
 
 #5. Loading trained weights
 def load_my_state_dict(model, state_dict):
@@ -1489,8 +1540,8 @@ def load_my_state_dict(model, state_dict):
 def load_model(model_path):
     ckpt = torch.load(model_path) 
     start_epoch = ckpt['epoch'] + 1
-    #netD.load_state_dict(ckpt['netD'])    
-    #netG.load_state_dict(ckpt['netG'])    
+    netD.load_state_dict(ckpt['netD'])    
+    netG.load_state_dict(ckpt['netG'])    
     netC.load_state_dict(ckpt['netC'])
     #optD.load_state_dict(ckpt['optD'])
     #optG.load_state_dict(ckpt['optG'])
@@ -1571,25 +1622,41 @@ def sample_test_images_sequentially(lb, ub):
     return inputs, labels
 
 
-
 #6. Testing loop
-def test_all(epoch, best_accuracy, best_epoch, best_per_class_acc):
+def test_all(file, epoch, best_accuracy, best_epoch, best_per_class_acc):
     netC.eval()
     total_test = 0
     correct_test = 0
-    test_num = int(398 * 20 / 12)
+    test_num = 24
     total_test_per_class = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     correct_test_per_class = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     per_class_acc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     # sample some test images
+    # [-1, 1] or [0, 1] 
+    y_test = np.zeros((n_classes, test_num * batch_size))
+    preds_test = np.zeros((n_classes, test_num * batch_size))
+    test_id = 0
     with torch.no_grad():
          for steps in range(test_num):
              inputs, labels = sample_test_images_sequentially(steps * batch_size, (steps + 1) * batch_size)
              inputs = inputs.cuda()
              labels = labels.cuda()
-             inputs = torch.cat((inputs, inputs, inputs), dim = 1)
-             outputs = netC(inputs)
+             inputs_cat = torch.cat((inputs, inputs, inputs), dim = 1)
+        
+            
+             outputs = netC(inputs_cat)
              # accuracy
+             sig = nn.Softmax(dim = 1)
+             outputs_normalized = sig(outputs)
+             outputs_normalized = outputs_normalized.data.cpu().numpy()
+             labels_data = labels.data.cpu().numpy()
+             #print(outputs_normalized)
+             for b in range(batch_size):                    
+                 for cla in range(n_classes):
+                     preds_test[cla][test_id] = outputs_normalized[b][cla]
+                     y_test[cla][test_id] = (labels_data[b] == cla)
+                     #print("{:5d} {:5d} {:5.0f}".format(b, cla, y_test[cla][test_id]))
+                 test_id += 1   
              _, predicted = torch.max(outputs.data, 1)
              total_test += labels.size(0)
              for i in range(batch_size):
@@ -1600,6 +1667,16 @@ def test_all(epoch, best_accuracy, best_epoch, best_per_class_acc):
                  total_test_per_class[cur_label] += 1
              correct_test += predicted.eq(labels.data).sum().item()
              test_accuracy = 100 * correct_test / total_test
+    # AUROC
+    for cla in range(n_classes):
+        if usable_label_arr[cla] == 0:
+            continue
+        fpr, tpr, threshold = metrics.roc_curve(y_test[cla], preds_test[cla])
+        roc_auc = metrics.auc(fpr, tpr)
+        print("Class {:4d} Name {:20s} AUROC {:6.2f} #(Samples) {:5d}".format(cla, label_id_dict[cla], roc_auc , total_test_per_class[cla]))
+
+
+    # Top 1 Acc
     for cla in range(n_classes):
         if total_test_per_class[cla] != 0:
            per_class_acc[cla] = 100 * correct_test_per_class[cla] / total_test_per_class[cla]
@@ -1611,11 +1688,13 @@ def test_all(epoch, best_accuracy, best_epoch, best_per_class_acc):
        best_accuracy = test_accuracy
        best_epoch = epoch
        best_per_class_acc = per_class_acc
+    logger.info('Epoch {:3d} Current Per Class Acc {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}\n'.format(epoch, per_class_acc[0], per_class_acc[1], per_class_acc[2], per_class_acc[3], per_class_acc[4], per_class_acc[5], per_class_acc[6], per_class_acc[7], per_class_acc[8], per_class_acc[9], per_class_acc[10], per_class_acc[11], per_class_acc[12], per_class_acc[13], per_class_acc[14]))
+  
     return test_accuracy, best_accuracy, best_epoch, best_per_class_acc
 
 
 #6. Training loop
-def test(total_trained_samples):
+def train(total_trained_samples):
   netD.train()
   netG.train()
   total_train = 0
@@ -1625,33 +1704,332 @@ def test(total_trained_samples):
   best_acc = 0
   best_epoch = 0
   best_per_class_acc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]    
+
+  avg_most_likely_prob = 0.0
+  cnt = 0
+  print("Initial test before training")
+  test_acc, best_acc, best_epoch, best_per_class_acc = test_all(logger, -1, best_acc, best_epoch, best_per_class_acc)
+  print("Test acc {:6.2f} Best test acc {:6.2f} best epoch {:5d}".format(test_acc, best_acc, best_epoch))
+  print('Epoch {:3d} Best Per Class Acc {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}\n'.format(-1, best_per_class_acc[0], best_per_class_acc[1], best_per_class_acc[2], best_per_class_acc[3], best_per_class_acc[4], best_per_class_acc[5], best_per_class_acc[6], best_per_class_acc[7], best_per_class_acc[8], best_per_class_acc[9], best_per_class_acc[10], best_per_class_acc[11], best_per_class_acc[12], best_per_class_acc[13], best_per_class_acc[14]))
+  logger.info('Epoch {:3d} Best Per Class Acc {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}\n'.format(-1, best_per_class_acc[0], best_per_class_acc[1], best_per_class_acc[2], best_per_class_acc[3], best_per_class_acc[4], best_per_class_acc[5], best_per_class_acc[6], best_per_class_acc[7], best_per_class_acc[8], best_per_class_acc[9], best_per_class_acc[10], best_per_class_acc[11], best_per_class_acc[12], best_per_class_acc[13], best_per_class_acc[14]))
+  netC.train()
+  
   #N = 0
   #pynormal = torch.tensor([0.0]).cuda()
   #avg_kl = torch.tensor([0.0]) # we want to maximize E_G[D_{KL}(p(y|x) || p(y))] 
   #avg_kl = avg_kl.cuda()
   acc_d_step = 0 # update generator per n D steps e.g. n = 5
   acc_g_step = 0
-  train_g_more = True
-  train_d_more = not(train_g_more)
-  g_vs_d = 4
-  d_vs_g = 3
+  for epoch in range(start_epoch, epochs):
+    netC.train() #classifier
+
+    for steps in range(epoch_imgs // batch_size):
+        for p in netD.parameters():
+            p.requires_grad = True # to avoid computation 
+        start = torch.cuda.Event(enable_timing=True)
+        end = torch.cuda.Event(enable_timing=True)
+        start.record()
+        inputs, labels = sample_train_images_randomly()
+        inputs = inputs.cuda()
+        labels = labels.cuda()
+        inputs_cat = torch.cat((inputs, inputs, inputs), dim = 1)
+        
+
+    	#print('sampling done')
+    	# create label arrays
+        true_label = torch.ones(batch_size, device=device)
+        fake_label = torch.zeros(batch_size, device=device)
+
+    	# noise vector z (r)
+        r = torch.randn(batch_size, 100, 1, 1, device=device)
+        fakeImageBatch = netG(r)
+    	#print(fakeImageBatch.shape)
+
+    	# train discriminator on real images
+        realImageBatch = inputs_cat.detach().clone()
+        
+        predictionsReal = netD(inputs)
+    	#print(inputs.shape)
+    	#print(predictionsReal.shape)
+        lossDiscriminator = bce_loss(predictionsReal, true_label) * alpha_d #labels = 1
+        lossDiscriminator.backward(retain_graph = True)
+
+    	# train discriminator on fake images
+        predictionsFake = netD(fakeImageBatch)
+        lossFake = bce_loss(predictionsFake, fake_label) * alpha_d #labels = 0
+        lossFake.backward(retain_graph = True)
+        ld = lossDiscriminator.item() + lossFake.item()
+
+        #optD.step()
+        if train_g_more:
+            if acc_g_step % g_vs_d == 0:
+                optD.step()
+                acc_d_step += 1
+        else:
+            optD.step()
+            acc_d_step += 1
 
 
-  test_acc, best_acc, best_epoch, best_per_class_acc = test_all(-1, best_acc, best_epoch, best_per_class_acc)
-  print("Test acc {:6.2f} Best test acc {:6.2f} best epoch {:5d}".format(test_acc, best_acc, best_epoch))
-  print('Epoch {:3d} Best Per Class Acc {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}\n'.format(-1, best_per_class_acc[0], best_per_class_acc[1], best_per_class_acc[2], best_per_class_acc[3], best_per_class_acc[4], best_per_class_acc[5], best_per_class_acc[6], best_per_class_acc[7], best_per_class_acc[8], best_per_class_acc[9], best_per_class_acc[10], best_per_class_acc[11], best_per_class_acc[12], best_per_class_acc[13], best_per_class_acc[14]))
-  logger.info('Epoch {:3d} Best Per Class Acc {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}\n'.format(-1, best_per_class_acc[0], best_per_class_acc[1], best_per_class_acc[2], best_per_class_acc[3], best_per_class_acc[4], best_per_class_acc[5], best_per_class_acc[6], best_per_class_acc[7], best_per_class_acc[8], best_per_class_acc[9], best_per_class_acc[10], best_per_class_acc[11], best_per_class_acc[12], best_per_class_acc[13], best_per_class_acc[14]))
-  netC.train()
+    	# train generator
+        for p in netD.parameters():
+            p.requires_grad = False # to avoid computation
+        optG.zero_grad()
+        predictionsFake = netD(fakeImageBatch)
+        lossGenerator = bce_loss(predictionsFake, true_label) * alpha_g #labels = 1
+        lg = lossGenerator.item()
+        #lossGenerator *= (ld / lossGenerator.item())
+        lossGenerator.backward(retain_graph = True)
+        # count steps of updating generating
+        #if acc_d_step % d_vs_g == 0:
+        if train_d_more:
+            if acc_d_step % d_vs_g == 0:
+                optG.step()
+                acc_g_step += 1
+        else:
+            optG.step()
+            acc_g_step += 1
+        torch.autograd.set_detect_anomaly(True)
+        fakeImageBatch = fakeImageBatch.detach().clone()
 
+        # Neural Style Transfer
+        style = torch.cat((inputs, inputs, inputs), dim=1)
+        content = torch.cat((fakeImageBatch, fakeImageBatch, fakeImageBatch), dim=1)
+        # optimized image given style: real and content: GAN images
+        opt = model_deconv(style, content)
+        style_layers = ['r11','r21','r31','r41', 'r51'] 
+        loss_layers = style_layers 
+        # Gram Matrix
+        loss_fns = [GramMSELoss()] * len(style_layers)
+        if torch.cuda.is_available():
+           loss_fns = [loss_fn.cuda() for loss_fn in loss_fns]
+        #these are good weights settings:
+        style_weights = [1e3/n**2 for n in [64,128,256,512,512]] #[1e0, 0.002, 5e-4, 1e-5, 0.01]
+        weights = style_weights 
+        style_targets = [GramMatrix()(A).detach() for A in vgg(style, style_layers)]
+
+        targets = style_targets
+        # USE Deconv opt -> loss network -> 
+        # style & content from deconv opt
+        out = vgg(opt, loss_layers)
+        layer_losses = [weights[a] * loss_fns[a](A, targets[a]) for a,A in enumerate(out)]
+        nst_loss = sum(layer_losses) * alpha_nst
+        nst_loss.backward()
+        if steps % display_per_iters == 0:
+            print('Style: Real Content: GAN NST Style Gram Matrix Loss is {:6.2f}'.format(nst_loss.item()))
+        logger.info('Style: Real Content: GAN NST Style Gram Matrix Loss is {:6.2f}'.format(nst_loss.item()))
+        
+    	# train classifier on real data
+        
+        predictions = netC(inputs_cat)
+        realClassifierLoss = criterion(predictions, labels) * alpha_c
+        realClassifierLoss.backward(retain_graph=True)
+
+    	# update classifier's gradient on real data
+        optC.step()
+        optC.zero_grad()
+
+    	# update the classifer on fake data
+    	# run classifer on fake directly
+        fakeImageBatch_cat = torch.cat((fakeImageBatch, fakeImageBatch, fakeImageBatch), dim = 1)
+             
+        predictionsFake = netC(fakeImageBatch_cat)
+        
+        predictedLabels = torch.argmax(predictionsFake, 1) # -> [0 , 5, 9, 3, ...]
+        
+        klconfidenceThresh = 1e-6 # if prob is > klThresh include this in the expectation of KL term
+        
+        # 2 p(y|x)
+        probs = F.softmax(predictionsFake, dim=1)
+    	# Compute MMD score 
+        realImageBatch = inputs_cat.detach().clone()
+        #print(realImageBatch.shape)
+    	# remember to detach this thing and clone and retain_graph = True for backprop
+        predictions_real = netC(realImageBatch)
+        probs_real = F.softmax(predictions_real, dim=1)
+        real = probs_real
+        fake = probs
+        Mxx = distance(real, real, False)
+        Mxy = distance(real, fake, False)
+        Myy = distance(fake, fake, False) 
+        cur_mmd = mmd(Mxx, Mxy, Myy)
+        if cur_mmd != -1:
+            cur_mmd = cur_mmd * alpha_mmd
+            cur_mmd.require_grad = True
+            cur_mmd.backward(retain_graph = True)
+    		#print('			mmd    is {:12.6f}'.format(cur_mmd.item()))    	
+        else:
+            cur_mmd = torch.tensor(-1.0)
+            cur_mmd = cur_mmd.cuda()
+    	# Compute IS score (KL)
+    	# update p(y = normal)
+    	#pynormal = torch.tensor([0.0]).cuda()
+    	
+        #update all 15 classes p(Y=y) y \in [0, 15]
+        py = np.zeros(n_classes)
+        py = torch.from_numpy(py).cuda()
+        N = 0
+        for i in range(batch_size):
+            for j in range(n_classes): 
+                py[j] += probs[i, j]
+                py[j] = (py[j] * N + probs[i, j]) / (N + 1)
+            N += 1
+        py = py / batch_size
+    	#print('P(Y = y) = ', py)
+
+        # KL(p(y|x) || p(y)) within the batch
+        avg_kl = torch.tensor([0.0]) # we want to maximize E_G[D_{KL}(p(y|x) || p(y))] 
+        avg_kl = avg_kl.cuda()
+        for i in range(batch_size):
+            for j in range(n_classes): #Y = y   
+                pycondx = probs[i, j]
+                eps = 1e-20
+                kl = pycondx * ((pycondx + eps).log() - (py[j] + eps).log()) #py[j] = p(Y=j)
+                avg_kl += kl
+        avg_kl = avg_kl / batch_size
+    	
+    	# inception score D_KL loss 
+    	#   want to minimize so take -avg_kl min(-avg_kl) = max(avg_kl)
+        kl_loss = -avg_kl * alpha_kl
+        
+        kl_loss.require_grad = True
+    	#print('			kl loss is {:12.6f}'.format(kl_loss.item()))    	
+        kl_loss.backward(retain_graph = True) 
+        
+        # psuedo labeling threshold
+        mostLikelyProbs = np.asarray([probs[i, predictedLabels[i]].item() for  i in range(len(probs))])
+        avg_cur_mostLikelyProbs = mostLikelyProbs.mean()
+        avg_most_likely_prob += avg_cur_mostLikelyProbs
+        cnt += 1
+        if steps % display_per_iters == 0:
+           print("Pseudo Prob {:4.1f}  {:4.1f}  {:4.1f}  {:4.1f}  {:4.1f}  {:4.1f}  {:4.1f}  {:4.1f}  {:4.1f}  {:4.1f}  {:4.1f}  {:4.1f}".format(mostLikelyProbs[0], mostLikelyProbs[1], mostLikelyProbs[2], mostLikelyProbs[3], mostLikelyProbs[4], mostLikelyProbs[5], mostLikelyProbs[6], mostLikelyProbs[7], mostLikelyProbs[8], mostLikelyProbs[9], mostLikelyProbs[10], mostLikelyProbs[11],))
+           print("Current mean mostlikely prob {:4.1f} ====> Accumulative average {:4.1f}\n".format(avg_cur_mostLikelyProbs, avg_most_likely_prob / float(cnt)))
+        #print(mostLikelyProbs)
+        toKeep = mostLikelyProbs > confidenceThresh
+        #print(sum(toKeep))
+        if sum(toKeep) != 0:
+            fakeClassifierLoss = criterion(predictionsFake[toKeep], predictedLabels[toKeep])  * alpha_c * advWeight
+            fakeClassifierLoss.backward(retain_graph = True)
+            #optC.step()
+            #optC.zero_grad()
+            
+            real_vs_fake = 0
+            real_num = int(real_vs_fake * sum(toKeep) / batch_size)
+            #print(real_num)
+            for l in range(real_num):
+                inputs2, labels2 = sample_train_images_randomly()
+                inputs2 = inputs2.cuda()
+                labels2 = labels2.cuda()
+                predictions2 = netC(inputs2)
+                realClassifierLoss2 = criterion(predictions2, labels2) * 0.5
+                realClassifierLoss2.backward(retain_graph=True)
+                #optC.step()
+                #optC.zero_grad()
+        optC.step()
+            
+
+        
+    	# reset the gradients
+        optD.zero_grad()
+        optG.zero_grad()
+        optC.zero_grad()
+
+        end.record()
+    	# Waits for everything to finish running
+
+        torch.cuda.synchronize()
+        total_trained_samples += batch_size
+    	# Logging
+        total_loss = lossDiscriminator + lossFake + cur_mmd + realClassifierLoss #
+        if sum(toKeep) != 0:
+            total_loss += fakeClassifierLoss
+        if steps % display_per_iters == 0:  
+            print('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} aKL is {:4.2f}  mmd is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lg, realClassifierLoss.item(), avg_kl.item(), cur_mmd.item(), total_trained_samples)) #lossDiscriminator.item(), lossFake.item(),
+        logger.info('Epoch {:3d} Step {:5d}/{:5d} L_total is {:6.2f} L_D is {:6.2f} L_G is {:6.2f} L_C is {:6.2f} aKL is {:4.2f}  mmd is {:6.2f} Tot Trained {:7d} '.format(epoch, steps, epoch_imgs // batch_size, total_loss.item(), lossDiscriminator.item() + lossFake.item(), lg, realClassifierLoss.item(), avg_kl.item(), cur_mmd.item(), total_trained_samples))
+        discriminator_logger.info('{:6.2f}'.format(lossDiscriminator.item()))
+        fake_logger.info('{:6.2f}'.format(lossFake.item()))
+        generator_logger.info('{:6.2f}'.format(lossGenerator.item()))
+        real_classifier_logger.info('{:6.2f}'.format(realClassifierLoss.item()))
+        avg_kl_logger.info('{:6.2f}'.format(avg_kl.item()))
+        if sum(toKeep) != 0:
+           fake_classifier_logger.info('{:6.2f}'.format(fakeClassifierLoss.item()))
+        total_logger.info('{:6.2f}'.format(total_loss.item()))
+
+    	# save gan image
+        if steps % save_gan_per_iters == 0:  
+            gridOfFakeImages = torchvision.utils.make_grid(fakeImageBatch.cpu())
+            torchvision.utils.save_image(gridOfFakeImages, save_gan_img_folder_prefix + str(epoch) + '_' + str(steps) + '.png')
+        if steps % show_train_classifier_acc_per_iters == 0:
+            netC.eval()
+    		# accuracy
+            _, predicted = torch.max(predictions, 1)
+            total_train += labels.size(0)
+            correct_train += predicted.eq(labels.data).sum().item()
+            train_accuracy = 100 * correct_train / total_train
+            logger.info('                             Train Accuracy (classifier) is {:6.2f}'.format(train_accuracy))
+            train_accuracy_logger.info('{:6.2f}'.format(train_accuracy))
+            netC.train()
+
+    	# use test set of real image to guide the learning of GAN
+        #if steps % show_test_classifier_acc_per_iters == 0:
+        #    test_acc, best_acc, best_epoch, best_per_class_acc = test_all(logger, epoch, best_acc, best_epoch, best_per_class_acc)
+        #    print("Test acc {:6.2f} Best test acc {:6.2f} best epoch {:5d}".format(test_acc, best_acc, best_epoch))
+        #    print('Epoch {:3d} Best Per Class Acc {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}\n'.format(epoch, best_per_class_acc[0], best_per_class_acc[1], best_per_class_acc[2], best_per_class_acc[3], best_per_class_acc[4], best_per_class_acc[5], best_per_class_acc[6], best_per_class_acc[7], best_per_class_acc[8], best_per_class_acc[9], best_per_class_acc[10], best_per_class_acc[11], best_per_class_acc[12], best_per_class_acc[13], best_per_class_acc[14]))
+        #    logger.info('Epoch {:3d} Best Per Class Acc {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}\n'.format(epoch, best_per_class_acc[0], best_per_class_acc[1], best_per_class_acc[2], best_per_class_acc[3], best_per_class_acc[4], best_per_class_acc[5], best_per_class_acc[6], best_per_class_acc[7], best_per_class_acc[8], best_per_class_acc[9], best_per_class_acc[10], best_per_class_acc[11], best_per_class_acc[12], best_per_class_acc[13], best_per_class_acc[14]))
+        #    netC.train()
+
+            #netC.eval()
+    		# sample some test images
+            #with torch.no_grad():
+            #    inputs, labels = sample_test_images_randomly()
+            #    inputs = inputs.cuda()
+            #    labels = labels.cuda()
+            #    outputs = netC(inputs)
+    	
+    			# accuracy
+            #    _, predicted = torch.max(outputs.data, 1)
+            #    total_test += labels.size(0)
+            #    correct_test += predicted.eq(labels.data).sum().item()
+            #    test_accuracy = 100 * correct_test / total_test
+            #    print(' test acc', test_accuracy)
+            #    logger.info('                             Test Accuracy (classifier) is {:6.2f}'.format(test_accuracy))
+            #    test_accuracy_logger.info('{:6.2f}'.format(test_accuracy))
+            #    netC.train()
+        # current state of the trained model
+        state = {
+            'epoch': epoch,
+            'iter': steps, 
+            'netD': netD.state_dict(),
+            'netG': netG.state_dict(),
+            'netC': netC.state_dict(),
+            'optD': optD.state_dict(),
+            'optG': optG.state_dict(),
+            'optC': optC.state_dict(),
+            'total_trained_samples': total_trained_samples
+                }
+        #if (steps * batch_size) % save_per_samples == 0:
+        #    model_file = weights_prefix + model_ckpt_prefix + 'bak_' + str(epoch + 1) + '_' + str((steps * batch_size) // save_per_samples) + '.pth'
+        #    torch.save(state, model_file)
+
+    # Test acc at the end of each epoch    
+    test_acc, best_acc, best_epoch, best_per_class_acc = test_all(logger, epoch, best_acc, best_epoch, best_per_class_acc)
+    print("Test acc {:6.2f} Best test acc {:6.2f} best epoch {:5d}".format(test_acc, best_acc, best_epoch))
+    print('Epoch {:3d} Best Per Class Acc {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}\n'.format(epoch, best_per_class_acc[0], best_per_class_acc[1], best_per_class_acc[2], best_per_class_acc[3], best_per_class_acc[4], best_per_class_acc[5], best_per_class_acc[6], best_per_class_acc[7], best_per_class_acc[8], best_per_class_acc[9], best_per_class_acc[10], best_per_class_acc[11], best_per_class_acc[12], best_per_class_acc[13], best_per_class_acc[14]))
+    logger.info('Epoch {:3d} Best Per Class Acc {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f} {:6.2f}\n'.format(epoch, best_per_class_acc[0], best_per_class_acc[1], best_per_class_acc[2], best_per_class_acc[3], best_per_class_acc[4], best_per_class_acc[5], best_per_class_acc[6], best_per_class_acc[7], best_per_class_acc[8], best_per_class_acc[9], best_per_class_acc[10], best_per_class_acc[11], best_per_class_acc[12], best_per_class_acc[13], best_per_class_acc[14]))
+    netC.train()
+    
+    # Save per-epoch weights
+    model_file = weights_prefix + model_ckpt_prefix + weights_middle_name + str(epoch + 1) + '.pth'
+    torch.save(state, model_file)
   return total_trained_samples
 total_trained_samples = 0
 torch.manual_seed(42)
 resume_training = True
 start_epoch = 0
 if resume_training:
+	start_epoch, total_trained_samples = load_gan_and_vanilla('../models_apr28/ecgan-chest-xray14epo_98.pth', '../models_vanilla/ecgan-chest-xray14epo_99_.pth')  
+    #load_model('../models_allclasses_wis_mmd/ecgan-chest-xray14_allclasses_is_mmd_epo_101.pth')
 
-	start_epoch, total_trained_samples = load_model('../models_vanilla/ecgan-chest-xray14epo_99_.pth')
-total_trained_samples = test(total_trained_samples)
+total_trained_samples = train(total_trained_samples)
  
             
   
