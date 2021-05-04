@@ -55,12 +55,12 @@
     **One model for all classes w/ classification loss only**
     
     
-	| Pathology | Id   |  Acc (%)  | 
-	|:-:|:-:|:-:|
+	| Pathology | Id   |  Acc (%)  | AUROC |
+	|:-:|:-:|:-:|:-:|
 	
-	| Pneumonia | 7 | 21.59  |
-	| Edema | 10 | 69.26 | 
-	| Hernia | 14 | 22.22 |
+	| Pneumonia | 7 | 53.62  | 0.53 |
+	| Edema | 10 | 22.70 | 0.70 |
+	| Hernia | 14 | 38.24 | 0.62 |
 
 
  
@@ -86,11 +86,11 @@
 
       a) Thresh = 0.7
 
-	| Pathology | Id   |  Acc (%)  | 
+	| Pathology | Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|
-	| Pneumonia | 7 | 27.27  |
-	| Edema | 10 | 60.17 | 
-	| Hernia | 14 | 77.78 |
+	| Pneumonia | 7 | 63.77  | 0.48 |
+	| Edema | 10 | 37.30 | 0.86 |
+	| Hernia | 14 | 47.06 | 0.85 |
 
       b) Thresh = 0.8
 	
@@ -99,11 +99,11 @@
 	```
 
 	
-	| Pathology | Id   |  Acc (%)  | 
+	| Pathology | Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|
-	| Pneumonia | 7 | 37.50  |
-	| Edema | 10 | 52.81 | 
-	| Hernia | 14 | 57.78 |
+	| Pneumonia | 7 | 46.38  | 0.48 |
+	| Edema | 10 | 56.76 |  0.83 |
+	| Hernia | 14 | 52.94 | 0.90 |
 	
 	c) Thresh = 0.9
 	
@@ -112,11 +112,11 @@
 	```
 
 	
-	| Pathology | Id   |  Acc (%)  | 
+	| Pathology | Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|
-	| Pneumonia | 7 | 36.36  |
-	| Edema | 10 | 45.89 | 
-	| Hernia | 14 | 62.22 |
+	| Pneumonia | 7 | 56.52  | 0.43 |
+	| Edema | 10 | 21.08 | 0.82 |
+	| Hernia | 14 | 70.59 | 0.93 |
 	
 	
 	
