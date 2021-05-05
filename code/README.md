@@ -57,9 +57,9 @@
     
 	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | -  | 0.65 |
+	| Pneumonia | 7 | -  | 0.63 |
 	| Edema | 10 | - | 0.75 |
-	| Hernia | 14 | - | 0.87 |
+	| Hernia | 14 | - | 0.88 |
 
 
  
