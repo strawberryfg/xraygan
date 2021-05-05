@@ -1229,8 +1229,8 @@ def load_test_list():
         if find_or != -1:
             continue
         this_label = label_name_dict[this_label]
-        #if this_label == 0:
-        #    continue #ignore no finding
+        if this_label == 0:
+            continue #ignore no finding
         # See if this image exists        
         for folders in img_folders:
             img_path = root_dir + folders + suffix + img_name            
@@ -2022,7 +2022,7 @@ torch.manual_seed(42)
 resume_training = True
 start_epoch = 0
 if resume_training:
-	start_epoch, total_trained_samples = load_model('../models_allclasses_wis_mmd/ecgan-chest-xray14_allclasses_is_mmd_epo_101.pth')
+	start_epoch, total_trained_samples = load_model('../models_allclasses_wis_mmd/ecgan-chest-xray14_allclasses_is_mmd_epo_103.pth')
     #load_gan_and_vanilla('../models_apr28/ecgan-chest-xray14epo_98.pth', '../models_vanilla/ecgan-chest-xray14epo_99_.pth') 
     #
 total_trained_samples = train(total_trained_samples)

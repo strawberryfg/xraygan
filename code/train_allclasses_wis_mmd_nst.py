@@ -469,7 +469,7 @@ vgg = VGG()
 
 vgg.load_state_dict(torch.load(model_dir + 'vgg_conv.pth'))
 for param in vgg.parameters():
-    param.requires_grad = False
+    param.requires_grad = True
 if torch.cuda.is_available():
     vgg = DataParallelModel(vgg).cuda()
 
@@ -1201,8 +1201,8 @@ def load_train_val_list():
         if usable_label_arr[this_label] == 0:        
            continue  
         
-        #if this_label == 0: #imbalance 
-        #   continue # no finding    
+        if this_label == 0: #imbalance 
+           continue # no finding    
         # See if this image exists        
         for folders in img_folders:
             img_path = root_dir + folders + suffix + img_name            
@@ -1789,8 +1789,12 @@ def train(total_trained_samples):
             optG.step()
             acc_g_step += 1
         torch.autograd.set_detect_anomaly(True)
+        #fakeImageBatch_original = fakeImageBatch.clone()
+        #fakeImageBatch_original = fakeImageBatch_original.clone()
+        #fakeImageBatch_original.requires_grad = True
         fakeImageBatch = fakeImageBatch.detach().clone()
-
+        fakeImageBatch_original = torch.cat((fakeImageBatch, fakeImageBatch, fakeImageBatch), dim=1)
+        
         # Neural Style Transfer
         style = torch.cat((inputs, inputs, inputs), dim=1)
         content = torch.cat((fakeImageBatch, fakeImageBatch, fakeImageBatch), dim=1)
@@ -1811,6 +1815,9 @@ def train(total_trained_samples):
         # USE Deconv opt -> loss network -> 
         # style & content from deconv opt
         out = vgg(opt, loss_layers)
+
+        # Use content gan images
+        #out = vgg(fakeImageBatch_original, loss_layers)
         layer_losses = [weights[a] * loss_fns[a](A, targets[a]) for a,A in enumerate(out)]
         nst_loss = sum(layer_losses) * alpha_nst
         nst_loss.backward()
@@ -2026,8 +2033,9 @@ torch.manual_seed(42)
 resume_training = True
 start_epoch = 0
 if resume_training:
-	start_epoch, total_trained_samples = load_gan_and_vanilla('../models_apr28/ecgan-chest-xray14epo_98.pth', '../models_vanilla/ecgan-chest-xray14epo_99_.pth')  
-    #load_model('../models_allclasses_wis_mmd/ecgan-chest-xray14_allclasses_is_mmd_epo_101.pth')
+	start_epoch, total_trained_samples = load_model('../models_allclasses_wis_mmd_nst/ecgan-chest-xray14_allclasses_is_mmd_epo_119.pth')
+    #load_gan_and_vanilla('../models_apr28/ecgan-chest-xray14epo_98.pth', '../models_vanilla/ecgan-chest-xray14epo_99_.pth')  
+    #
 
 total_trained_samples = train(total_trained_samples)
  
