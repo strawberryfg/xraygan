@@ -19,16 +19,16 @@ alpha_d = 0.5
 alpha_kl = 0.25
 alpha_mmd = 3
 alpha_c = 1.0
-alpha_nst_1 = 0.0015 #0.003 first for ~3 epochs (at first around 300)
-alpha_nst_style = 0.007
-confidenceThresh = 0.75 #disable
+alpha_nst_1 = 0.002 #0.003 first for ~3 epochs (at first around 300)
+alpha_nst_style = 0.035
+confidenceThresh = 0.6 
 train_g_more = True
 train_d_more = not(train_g_more)
 g_vs_d = 3
 d_vs_g = 3
 per_class_sample = True
-weights_prefix = '../models_pneuede/'
-weights_middle_name = "_pneuede_allow_200_is_mmd_nst_epo_"
+weights_prefix = '../models_allclasses_wis_mmd_nst/'
+weights_middle_name = "_allclasses_is_mmd_nst_thresh0.6_epo_"
 #0. torch imports
 import torch
 from torch.utils.data import DataLoader,Dataset
@@ -1090,9 +1090,9 @@ root_dir = "E:/ml/" # chest x-ray 14
 n_classes = 15 # 0 is normal : no finding
 batch_size = 12
 img_size = 128
-display_per_iters = 16 # how many iterations before outputting to the console window
+display_per_iters = 8 # how many iterations before outputting to the console window
 save_gan_per_iters = 5 # save gan images per this iterations
-save_gan_img_folder_prefix = root_dir + "train_fake_pneuede/"
+save_gan_img_folder_prefix = root_dir + "train_fake_allclasses_wis_mmd_nst/"
 show_train_classifier_acc_per_iters = 1000000 # how many iterations before showing train acc of classifier
 # Deprecated in favor of per-epoch test
 show_test_classifier_acc_per_iters = 290 # 
@@ -1183,9 +1183,7 @@ label_train_cnt = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 usable_label_arr = np.zeros(n_classes)
 usable_label_arr[7] = 1
 usable_label_arr[10] = 1
-
-few_shot_label = 10
-allowed_real_training_sample_number = 200
+usable_label_arr[14] = 1
     
 def load_train_val_list():
     #1. original train_val_list.txt
@@ -1308,7 +1306,7 @@ def sample_train_images_randomly():
             for cla in range(n_classes):
                 if usable_label_arr[cla] == 0:                
                     continue
-                per_class_sample_prob[cla] = 0.5 #uniform for penumonia and edema #1.0 / len(train_val_per_label_list[cla])
+                per_class_sample_prob[cla] = 1.0 / len(train_val_per_label_list[cla])
                 #per_class_sample_prob[cla] = 1.0 / float(n_classes)
                 sum += per_class_sample_prob[cla]
             for cla in range(n_classes):
@@ -1326,13 +1324,7 @@ def sample_train_images_randomly():
                     break
                 sum += per_class_sample_prob[cla]
             #print(cla)
-
-
             ll = len(train_val_per_label_list[cla])
-            if cla == few_shot_label:
-                #use only allowed number 
-                ll = allowed_real_training_sample_number
-            #print(ll)
             within_cla_id = random.randint(0, ll - 1)
             img_id = train_val_per_label_list[cla][within_cla_id]
         else:
@@ -1546,14 +1538,12 @@ def load_my_state_dict(model, state_dict):
     #print(own_state)
     return own_state
 
-# From scratch don't load netC
-
 def load_model(model_path):
     ckpt = torch.load(model_path) 
     start_epoch = ckpt['epoch'] + 1
     netD.load_state_dict(ckpt['netD'])    
     netG.load_state_dict(ckpt['netG'])    
-    #netC.load_state_dict(ckpt['netC'])
+    netC.load_state_dict(ckpt['netC'])
     #optD.load_state_dict(ckpt['optD'])
     #optG.load_state_dict(ckpt['optG'])
     #optC.load_state_dict(ckpt['optC'])
@@ -1685,8 +1675,7 @@ def test_all(file, epoch, best_accuracy, best_epoch, best_per_class_acc):
         fpr, tpr, threshold = metrics.roc_curve(y_test[cla], preds_test[cla])
         roc_auc = metrics.auc(fpr, tpr)
         print("Class {:4d} Name {:20s} AUROC {:6.2f} #(Samples) {:5d}".format(cla, label_id_dict[cla], roc_auc , total_test_per_class[cla]))
-        logger.info("Class {:4d} Name {:20s} AUROC {:6.2f} #(Samples) {:5d}".format(cla, label_id_dict[cla], roc_auc , total_test_per_class[cla]))
-        
+
 
     # Top 1 Acc
     for cla in range(n_classes):
@@ -2080,15 +2069,7 @@ torch.manual_seed(42)
 resume_training = True
 start_epoch = 0
 if resume_training:
-	start_epoch, total_trained_samples = load_model('../models_apr28/ecgan-chest-xray14epo_98.pth') #('../models_pneuede/ecgan-chest-xray14_pneuede_is_mmd_nst_epo_131.pth')   #
-    # 40 samples not from scratch so will load netC
-
-    # from scratch don't load netC 
-    # will need later
-    # May 4: start from an already good GAN model that generate fake images
-    
-    # May 4: start from scratch no Res50 classification vanilla model
-    #load_model('../models_allclasses_wis_mmd_nst/ecgan-chest-xray14_allclasses_is_mmd_epo_126.pth')
+	start_epoch, total_trained_samples = load_model('../models_allclasses_wis_mmd_nst/ecgan-chest-xray14_allclasses_is_mmd_epo_127.pth')
     #load_gan_and_vanilla('../models_apr28/ecgan-chest-xray14epo_98.pth', '../models_vanilla/ecgan-chest-xray14epo_99_.pth')  
     #
 
