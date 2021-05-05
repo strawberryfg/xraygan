@@ -55,7 +55,7 @@
     **One model for all classes w/ classification loss only**
     
     
-	| Pathology | Id   |  Acc (%)  | AUROC |
+	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | 53.62  | 0.53 |
 	| Edema | 10 | 22.70 | 0.70 |
@@ -85,7 +85,7 @@
 
       a) Thresh = 0.7
 
-	| Pathology | Id   |  Acc (%)  | AUROC |
+	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | 63.77  | 0.48 |
 	| Edema | 10 | 37.30 | 0.86 |
@@ -98,7 +98,7 @@
 	```
 
 	
-	| Pathology | Id   |  Acc (%)  | AUROC |
+	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | 46.38  | 0.48 |
 	| Edema | 10 | 56.76 |  0.83 |
@@ -111,13 +111,24 @@
 	```
 
 	
-	| Pathology | Id   |  Acc (%)  |  AUROC |
+	| Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | 56.52  | 0.43 |
 	| Edema | 10 | 21.08 | 0.82 |
 	| Hernia | 14 | 70.59 | 0.93 |
 
 6. *Ablation 2* Train with simplest GAN losses + IS loss + MMD loss + NST loss 
+	- Simple (regular discriminator, generator and classification losses)
+	
+	```
+		python train_allclasses_wo.py
+	```
+
+	| Pathology | Class Id   |  Acc (%)  |  AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - | - |
+	| Hernia | 14 | - | - |
 	
 	- + IS
 	
@@ -125,11 +136,11 @@
 		python train_allclasses_wis_only.py
 	```
 
-	| Pathology | Id   |  Acc (%)  |  AUROC |
+	| Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | 39.13  | 0.68 |
-	| Edema | 10 | 87.03 | 0.80 |
-	| Hernia | 14 | 61.76 | 0.91 |
+	| Pneumonia | 7 | -  | 0.68 |
+	| Edema | 10 | - | 0.80 |
+	| Hernia | 14 | - | 0.91 |
 	
 	- + IS + MMD
 	
@@ -137,7 +148,7 @@
 		python train_allclasses_wis_mmd.py
 	```
 	
-	| Pathology | Id   |  Acc (%)  |  AUROC |
+	| Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | -  | 0.67 |
 	| Edema | 10 | - | 0.82 |
@@ -149,7 +160,7 @@
 		python train_allclasses_wis_mmd_nst.py
 	```
 	
-	| Pathology | Id   |  Acc (%)  |  AUROC |
+	| Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | -  | 0.70 |
 	| Edema | 10 | - | 0.83 |
