@@ -1183,7 +1183,9 @@ label_train_cnt = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 usable_label_arr = np.zeros(n_classes)
 usable_label_arr[7] = 1
 usable_label_arr[10] = 1
-usable_label_arr[14] = 1
+
+few_shot_label = 10
+allowed_real_training_sample_number = 20
     
 def load_train_val_list():
     #1. original train_val_list.txt
@@ -1306,7 +1308,7 @@ def sample_train_images_randomly():
             for cla in range(n_classes):
                 if usable_label_arr[cla] == 0:                
                     continue
-                per_class_sample_prob[cla] = 1.0 / len(train_val_per_label_list[cla])
+                per_class_sample_prob[cla] = 0.5 #uniform for penumonia and edema #1.0 / len(train_val_per_label_list[cla])
                 #per_class_sample_prob[cla] = 1.0 / float(n_classes)
                 sum += per_class_sample_prob[cla]
             for cla in range(n_classes):
@@ -1324,7 +1326,13 @@ def sample_train_images_randomly():
                     break
                 sum += per_class_sample_prob[cla]
             #print(cla)
+
+
             ll = len(train_val_per_label_list[cla])
+            if cla == few_shot_label:
+                #use only allowed number 
+                ll = allowed_real_training_sample_number
+            #print(ll)
             within_cla_id = random.randint(0, ll - 1)
             img_id = train_val_per_label_list[cla][within_cla_id]
         else:
@@ -1538,12 +1546,14 @@ def load_my_state_dict(model, state_dict):
     #print(own_state)
     return own_state
 
+# From scratch don't load netC
+
 def load_model(model_path):
     ckpt = torch.load(model_path) 
     start_epoch = ckpt['epoch'] + 1
     netD.load_state_dict(ckpt['netD'])    
     netG.load_state_dict(ckpt['netG'])    
-    netC.load_state_dict(ckpt['netC'])
+    #netC.load_state_dict(ckpt['netC'])
     #optD.load_state_dict(ckpt['optD'])
     #optG.load_state_dict(ckpt['optG'])
     #optC.load_state_dict(ckpt['optC'])
@@ -2068,7 +2078,13 @@ torch.manual_seed(42)
 resume_training = True
 start_epoch = 0
 if resume_training:
-	start_epoch, total_trained_samples = load_model('../models_allclasses_wis_mmd_nst/ecgan-chest-xray14_allclasses_is_mmd_epo_126.pth')
+	start_epoch, total_trained_samples = load_model('../models_apr28/ecgan-chest-xray14epo_98.pth')
+    # from scratch don't load netC 
+    # will need later
+    # May 4: start from an already good GAN model that generate fake images
+    
+    # May 4: start from scratch no Res50 classification vanilla model
+    #load_model('../models_allclasses_wis_mmd_nst/ecgan-chest-xray14_allclasses_is_mmd_epo_126.pth')
     #load_gan_and_vanilla('../models_apr28/ecgan-chest-xray14epo_98.pth', '../models_vanilla/ecgan-chest-xray14epo_99_.pth')  
     #
 
