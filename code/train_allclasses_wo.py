@@ -16,8 +16,8 @@ blr_g = 0.001
 blr_c = 0.0005
 alpha_g = 2.0
 alpha_d = 0.5
-alpha_kl = 0.25
-alpha_mmd = 3
+alpha_kl = 0.00
+alpha_mmd = 0
 alpha_c = 1.0
 alpha_nst = 0.000
 confidenceThresh = 0.75 #disable
@@ -26,8 +26,8 @@ train_d_more = not(train_g_more)
 g_vs_d = 3
 d_vs_g = 3
 per_class_sample = True
-weights_prefix = '../models_allclasses_wis_mmd/'
-weights_middle_name = "_allclasses_is_mmd_epo_"
+weights_prefix = '../models_allclasses_wo/'
+weights_middle_name = "_allclasses_wo_epo_"
 #0. torch imports
 import torch
 from torch.utils.data import DataLoader,Dataset
@@ -2025,8 +2025,9 @@ torch.manual_seed(42)
 resume_training = True
 start_epoch = 0
 if resume_training:
-	start_epoch, total_trained_samples = load_model('../models_allclasses_wis_mmd/ecgan-chest-xray14_allclasses_is_mmd_epo_117.pth')
-    #load_gan_and_vanilla('../models_apr28/ecgan-chest-xray14epo_98.pth', '../models_vanilla/ecgan-chest-xray14epo_99_.pth') 
+	start_epoch, total_trained_samples = load_gan_and_vanilla('../models_apr28/ecgan-chest-xray14epo_98.pth', '../models_vanilla/ecgan-chest-xray14epo_99_.pth') 
+    #load_model('../models_allclasses_wis_mmd/ecgan-chest-xray14_allclasses_is_mmd_epo_117.pth')
+    #
     #
 total_trained_samples = train(total_trained_samples)
  
