@@ -139,8 +139,21 @@
 	
 	| Pathology | Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | 47.83  | 0.50 |
-	| Edema | 10 | 39.46 | 0.82 |
-	| Hernia | 14 | 67.65 | 0.81 |
+	| Pneumonia | 7 | -  | 0.67 |
+	| Edema | 10 | - | 0.82 |
+	| Hernia | 14 | - | 0.94 |
+	
+	- + IS + MMD + NST 
+	
+	```
+		python train_allclasses_wis_mmd_nst.py
+	```
+	
+	| Pathology | Id   |  Acc (%)  |  AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | -  | 0.70 |
+	| Edema | 10 | - | 0.83 |
+	| Hernia | 14 | - | 0.92 |
+	
 
 ### Notes
