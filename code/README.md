@@ -73,7 +73,7 @@
 		python test_allclasses_cla_vanilla.py
 	```
 	
-		a) To limit the scope to three classes (*Pneumonia*, *Edema*, *Hernia*), use the following command
+	  a) To limit the scope to three classes (*Pneumonia*, *Edema*, *Hernia*), use the following command
 		```
 			python train_allclasses_cla_vanilla.py		
 		```
