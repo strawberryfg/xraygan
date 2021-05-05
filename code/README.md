@@ -197,7 +197,7 @@
 	| Edema | 10 | - | 0.71 |
 	| Hernia | 14 | - | - |
 	
-      iii. 40	
+      iii. 60	
         | Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | -  | - |
