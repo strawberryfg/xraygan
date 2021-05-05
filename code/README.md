@@ -73,7 +73,8 @@
 		python test_allclasses_cla_vanilla.py
 	```
 	
-	  a) To limit the scope to three classes (*Pneumonia*, *Edema*, *Hernia*), use the following command
+	  a) To limit the scope to three classes (*Pneumonia*, *Edema*, *Hernia*), use the following 
+	  
 		```
 			python train_allclasses_cla_vanilla.py		
 		```
@@ -171,6 +172,38 @@
 	| Pneumonia | 7 | -  | 0.70 |
 	| Edema | 10 | - | 0.83 |
 	| Hernia | 14 | - | 0.92 |
+
+
+7. *Ablation 3* Train with few real samples for one class (Edema). Vary #(real samples)
+
+	- + 
 	
+	```
+		python train_pneuede_wis_mmd_nst.py
+	```
+
+	| Pathology | Class Id   |  Acc (%)  |  AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - | - |
+	| Hernia | 14 | - | - |
+
+7. *Ablation 3* Vary #(fake samples) using 
+8. 
+    a) discriminator to get P(X is real) and 
+    
+    b) confidence threshold to get P(classification accuracy is confident enough to generate pseudo labels for training)
+
+	- + 
+	
+	```
+		python 
+	```
+
+	| Pathology | Class Id   |  Acc (%)  |  AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - | - |
+	| Hernia | 14 | - | - |
 
 ### Notes
