@@ -79,7 +79,7 @@
 		```
 
 
-5. *Ablation 1* Train with pseudo labels 
+5. *Ablation 1* Train with pseudo labels (**Numbers need to be fixed. Run on 3 classes instead of all**)
 
     **Pseudo label confidence threshold**
 
