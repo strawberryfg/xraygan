@@ -182,11 +182,15 @@
 		python train_pneuede_wis_mmd_nst.py
 	```
 
+      i. 20 samples for Edema
+      
 	| Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | -  | - |
-	| Edema | 10 | - | - |
+	| Edema | 10 | - | 0.52 |
 	| Hernia | 14 | - | - |
+	
+      ii. 40	
 
 8. *Ablation 4* Vary #(fake samples) using 
 
