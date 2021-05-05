@@ -190,18 +190,26 @@
 	| Edema | 10 | - | 0.52 |
 	| Hernia | 14 | - | - |
 	
-      ii. 40	
+      ii. 30 samples for Edema
+      
+	| Pathology | Class Id   |  Acc (%)  |  AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - | 0.62 |
+	| Hernia | 14 | - | - |
+	
+      iii. 40	
         | Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | -  | - |
 	| Edema | 10 | - | 0.71 |
 	| Hernia | 14 | - | - |
 	
-      iii. 60	
+      iv. 100	
         | Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | -  | - |
-	| Edema | 10 | - | - |
+	| Edema | 10 | - | 0.71 |
 	| Hernia | 14 | - | - |
 
 8. *Ablation 4* Vary #(fake samples) using 
