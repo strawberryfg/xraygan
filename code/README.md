@@ -191,6 +191,18 @@
 	| Hernia | 14 | - | - |
 	
       ii. 40	
+        | Pathology | Class Id   |  Acc (%)  |  AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - | 0.71 |
+	| Hernia | 14 | - | - |
+	
+      iii. 40	
+        | Pathology | Class Id   |  Acc (%)  |  AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - | - |
+	| Hernia | 14 | - | - |
 
 8. *Ablation 4* Vary #(fake samples) using 
 
