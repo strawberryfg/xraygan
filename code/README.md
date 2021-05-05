@@ -188,8 +188,8 @@
 	| Edema | 10 | - | - |
 	| Hernia | 14 | - | - |
 
-7. *Ablation 3* Vary #(fake samples) using 
-8. 
+8. *Ablation 4* Vary #(fake samples) using 
+
     a) discriminator to get P(X is real) and 
     
     b) confidence threshold to get P(classification accuracy is confident enough to generate pseudo labels for training)
