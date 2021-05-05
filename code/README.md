@@ -80,6 +80,7 @@
 
 	```
 		python train_allclasses.py
+		python train_pne_ede_her_res50_vanilla.py
 	```
 
 
@@ -118,7 +119,7 @@
 	| Hernia | 14 | 70.59 | 0.93 |
 
 6. *Ablation 2* Train with simplest GAN losses + IS loss + MMD loss + NST loss 
-	- Simple (regular discriminator, generator and classification losses)
+	- + Simple (regular discriminator, generator and classification losses)
 	
 	```
 		python train_allclasses_wo.py
