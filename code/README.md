@@ -86,19 +86,29 @@
 
 
 	```
-		python train_allclasses.py		
+		python train_allclasses.py
+		python train_allclasses_wis_mmd_nst_thresh0.6.py
 	```
 
 
-      a) Thresh = 0.7
+      a) Thresh = 0.6
 
 	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | 63.77  | 0.48 |
-	| Edema | 10 | 37.30 | 0.86 |
-	| Hernia | 14 | 47.06 | 0.85 |
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - | - |
+	| Hernia | 14 | - | - |
+	
+      b) Thresh = 0.7
 
-      b) Thresh = 0.8
+	| Pathology | Class Id   |  Acc (%)  | AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - | - |
+	| Hernia | 14 | - | - |
+
+
+      c) Thresh = 0.8
 	
 	```
 		python train_allclasses_thresh0.8.py
@@ -107,11 +117,11 @@
 	
 	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | 46.38  | 0.48 |
-	| Edema | 10 | 56.76 |  0.83 |
-	| Hernia | 14 | 52.94 | 0.90 |
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - |  - |
+	| Hernia | 14 | - | - |
 	
-	c) Thresh = 0.9
+      d) Thresh = 0.9
 	
 	```
 		python train_allclasses_thresh0.9.py
@@ -120,9 +130,11 @@
 	
 	| Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | 56.52  | 0.43 |
-	| Edema | 10 | 21.08 | 0.82 |
-	| Hernia | 14 | 70.59 | 0.93 |
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - | - |
+	| Hernia | 14 | - | - |
+
+
 
 6. *Ablation 2* Train with simplest GAN losses + IS loss + MMD loss + NST loss 
 	- + Simple (regular discriminator, generator and classification losses)
