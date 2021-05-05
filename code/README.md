@@ -72,6 +72,12 @@
 	```
 		python test_allclasses_cla_vanilla.py
 	```
+	
+		a) To limit the scope to three classes (*Pneumonia*, *Edema*, *Hernia*), use the following command
+		```
+			python train_allclasses_cla_vanilla.py		
+		```
+
 
 5. *Ablation 1* Train with pseudo labels 
 
@@ -79,8 +85,7 @@
 
 
 	```
-		python train_allclasses.py
-		python train_pne_ede_her_res50_vanilla.py
+		python train_allclasses.py		
 	```
 
 
