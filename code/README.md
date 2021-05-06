@@ -224,16 +224,10 @@
 	| Edema | 10 | - | 0.71 |
 	| Hernia | 14 | - | - |
 
-8. *Ablation 4* Vary #(fake samples) using 
-
-    a) discriminator to get P(X is real) and 
-    
-    b) confidence threshold to get P(classification accuracy is confident enough to generate pseudo labels for training)
-
-	- fake = 1,000 discriminator P(X is real) <= 0.25 
+8. *Ablation 4* Use only #(fake samples)
 	
 	```
-		python train_pneuedeher_wis_mmd_nst_offline_fake.py
+		python .py
 	```
 
 	| Pathology | Class Id   |  Acc (%)  |  AUROC |
