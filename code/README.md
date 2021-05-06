@@ -83,16 +83,18 @@
 5. *Ablation 1* Train with pseudo labels (**Numbers need to be fixed. Run on 3 classes instead of all**)
 
     **Pseudo label confidence threshold**
+
         ```		
 		python train_allclasses_wis_mmd_nst_threshP.py
 	``` 
+
      where P is the threshold
      
      e.g.
 
-	```		
+	   ```		
 		python train_allclasses_wis_mmd_nst_thresh0.6.py
-	```
+	   ```
 
 
       a) Thresh = 0.6
