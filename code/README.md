@@ -230,10 +230,10 @@
     
     b) confidence threshold to get P(classification accuracy is confident enough to generate pseudo labels for training)
 
-	- + 
+	- fake = 1,000 discriminator P(X is real) <= 0.25 
 	
 	```
-		python 
+		python train_pneuedeher_wis_mmd_nst_offline_fake.py
 	```
 
 	| Pathology | Class Id   |  Acc (%)  |  AUROC |
