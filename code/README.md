@@ -90,11 +90,7 @@
 
      where P is the threshold
      
-     e.g.
-
-	   ```		
-		python train_allclasses_wis_mmd_nst_thresh0.6.py
-	   ```
+     
 
 
       a) Thresh = 0.6
