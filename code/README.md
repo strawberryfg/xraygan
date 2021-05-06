@@ -88,7 +88,7 @@
 	``` 
      where P is the threshold
      
-     - e.g.
+     e.g.
 
 	```		
 		python train_allclasses_wis_mmd_nst_thresh0.6.py
