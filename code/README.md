@@ -106,7 +106,7 @@
 	| Edema | 10 | - | 0.82 |
 	| Hernia | 14 | - | 0.93 |
 
-    c) Thresh = 0.8
+    **c) Thresh = 0.8**
 	
 	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
@@ -125,6 +125,8 @@
 
 
 6. *Ablation 2* Train with simplest GAN losses + IS loss + MMD loss + NST loss 
+    *confidence threshold = 0.75* for this ablation.
+   
 	- + Simple (regular discriminator, generator and classification losses)
 	
 	```
@@ -175,7 +177,8 @@
 
 
 7. *Ablation 3* Train with few real samples for one class (Edema). Vary #(real samples)
-
+      *confidence threshold = 0.75* for this ablation too.
+      
 	- + 
 	
 	```
