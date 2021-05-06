@@ -186,8 +186,22 @@
 	```
 		python train_pneuede_wis_mmd_nst.py
 	```
+	
+	
+	```
+		python train_allclasses_wis_mmd_nst_thresh0.75_fake_cla_trainer_only.py.py
+	```
+	
+      i. train only on fake images
+      
+	| Pathology | Class Id   |  Acc (%)  |  AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - | 0.53 |
+	| Hernia | 14 | - | - |
+	
 
-      i. 20 samples for Edema
+      ii. 20 samples for Edema (both for GAN and for classification head)
       
 	| Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
@@ -195,7 +209,7 @@
 	| Edema | 10 | - | 0.52 |
 	| Hernia | 14 | - | - |
 	
-      ii. 30 samples for Edema
+      iii. 30 samples for Edema
       
 	| Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
@@ -203,30 +217,19 @@
 	| Edema | 10 | - | 0.62 |
 	| Hernia | 14 | - | - |
 	
-      iii. 40	
+      iv. 40	
         | Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | -  | - |
 	| Edema | 10 | - | 0.71 |
 	| Hernia | 14 | - | - |
 	
-      iv. 100	
+      v. 100	
         | Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
 	| Pneumonia | 7 | -  | - |
 	| Edema | 10 | - | 0.71 |
 	| Hernia | 14 | - | - |
 
-8. *Ablation 4* Use only **fake samples**
-	
-	```
-		python .py
-	```
-
-	| Pathology | Class Id   |  Acc (%)  |  AUROC |
-	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | -  | - |
-	| Edema | 10 | - | - |
-	| Hernia | 14 | - | - |
 
 ### Notes
