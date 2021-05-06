@@ -84,16 +84,13 @@
 
     **Pseudo label confidence threshold**
 
-        ```		
+    ```		
 		python train_allclasses_wis_mmd_nst_threshP.py
 	``` 
-
-     where P is the threshold
-     
-     
-
-
-      a) Thresh = 0.6
+	
+	where P is the threshold
+    
+    a) Thresh = 0.6
 
 	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
@@ -101,7 +98,7 @@
 	| Edema | 10 | - | 0.82 |
 	| Hernia | 14 | - | 0.94 |
 	
-      b) Thresh = 0.7
+    b) Thresh = 0.7
 
 	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
@@ -109,8 +106,7 @@
 	| Edema | 10 | - | 0.82 |
 	| Hernia | 14 | - | 0.93 |
 
-
-      c) Thresh = 0.8
+    c) Thresh = 0.8
 	
 	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
