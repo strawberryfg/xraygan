@@ -83,10 +83,14 @@
 5. *Ablation 1* Train with pseudo labels (**Numbers need to be fixed. Run on 3 classes instead of all**)
 
     **Pseudo label confidence threshold**
+        ```		
+		python train_allclasses_wis_mmd_nst_threshP.py
+	``` 
+     where P is the threshold
+     
+     - e.g.
 
-
-	```
-		python train_allclasses.py
+	```		
 		python train_allclasses_wis_mmd_nst_thresh0.6.py
 	```
 
@@ -95,44 +99,34 @@
 
 	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | -  | - |
-	| Edema | 10 | - | - |
-	| Hernia | 14 | - | - |
+	| Pneumonia | 7 | -  | 0.57 |
+	| Edema | 10 | - | 0.82 |
+	| Hernia | 14 | - | 0.94 |
 	
       b) Thresh = 0.7
 
 	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | -  | - |
-	| Edema | 10 | - | - |
-	| Hernia | 14 | - | - |
+	| Pneumonia | 7 | -  | 0.56 |
+	| Edema | 10 | - | 0.82 |
+	| Hernia | 14 | - | 0.93 |
 
 
       c) Thresh = 0.8
 	
-	```
-		python train_allclasses_thresh0.8.py
-	```
-
-	
 	| Pathology | Class Id   |  Acc (%)  | AUROC |
 	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | -  | - |
-	| Edema | 10 | - |  - |
-	| Hernia | 14 | - | - |
+	| Pneumonia | 7 | -  | 0.69 |
+	| Edema | 10 | - |  0.82 |
+	| Hernia | 14 | - | 0.90 |
 	
       d) Thresh = 0.9
 	
-	```
-		python train_allclasses_thresh0.9.py
-	```
-
-	
 	| Pathology | Class Id   |  Acc (%)  |  AUROC |
 	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | -  | - |
-	| Edema | 10 | - | - |
-	| Hernia | 14 | - | - |
+	| Pneumonia | 7 | -  | 0.54 |
+	| Edema | 10 | - | 0.81 |
+	| Hernia | 14 | - | 0.92 |
 
 
 
@@ -224,7 +218,7 @@
 	| Edema | 10 | - | 0.71 |
 	| Hernia | 14 | - | - |
 
-8. *Ablation 4* Use only #(fake samples)
+8. *Ablation 4* Use only **fake samples**
 	
 	```
 		python .py
