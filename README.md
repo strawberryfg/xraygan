@@ -5,8 +5,8 @@
    ```
    ${ROOT}
    +-- experiments
-   +-- figs
-   +-- logs
+   +-- figs   
    +-- code
+   +-- full_code
    +-- README.md
    ```
