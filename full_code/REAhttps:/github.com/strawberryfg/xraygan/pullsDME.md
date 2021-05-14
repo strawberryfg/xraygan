@@ -252,6 +252,14 @@
 	| Pneumonia | 7 | -  | 0.54 |
 	| Edema | 10 | - | 0.78 |
 	| Hernia | 14 | - | 0.85 |
+      
+      ii. Adv weight = 0.25
+      
+	| Pathology | Class Id   |  Acc (%)  |  AUROC |
+	|:-:|:-:|:-:|:-:|
+	| Pneumonia | 7 | -  | - |
+	| Edema | 10 | - | - |
+	| Hernia | 14 | - | - |
 	
 
 ### Notes
