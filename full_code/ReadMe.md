@@ -235,31 +235,5 @@
 	| Hernia | 14 | - | - |
 
 
-8. *Ablation 4* Vary adversarial weight
-
-      *confidence threshold = 0.75* for this ablation too.
-      
-	- + 
-	
-	```
-		train_may13_someclasses_wis_mmd_nst_thresh0.75_adv0.5.py
-	```
-	
-      i. Adv weight = 0.5
-      
-	| Pathology | Class Id   |  Acc (%)  |  AUROC |
-	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | -  | 0.54 |
-	| Edema | 10 | - | 0.78 |
-	| Hernia | 14 | - | 0.85 |
-      
-      ii. Adv weight = 0.25
-      
-	| Pathology | Class Id   |  Acc (%)  |  AUROC |
-	|:-:|:-:|:-:|:-:|
-	| Pneumonia | 7 | -  | - |
-	| Edema | 10 | - | - |
-	| Hernia | 14 | - | - |
-	
 
 ### Notes
