@@ -24,7 +24,7 @@ import numpy as np
 
 from sklearn import preprocessing
 
-#CGAN
+#CGAN adapted from Mirza, Osindero (2014) and Gupta, Lynch (2019)
 class CGAN(): 
   def __init__(self):
     #self.__root = None
