@@ -79,6 +79,6 @@ Clear spines, lungs, and varied contrastness \& color gradient.
 
 
 ----
-## Enjoy!~
+# Enjoy!~
 ----
    
