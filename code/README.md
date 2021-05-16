@@ -1,6 +1,6 @@
 # Clean Code
 
-*This is the cleann code for the final project of "Machine Learning - CSCI-GA.2565-001" Spring 2021 at NYU Courant.* 
+*This is the clean code for the final project of "Machine Learning - CSCI-GA.2565-001" Spring 2021 at NYU Courant.* 
 
 
 Joy Chen, Qingfu Wan
