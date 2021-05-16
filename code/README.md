@@ -11,7 +11,7 @@ Joy Chen, Qingfu Wan
 
 ----
 
-## Train
+## Steps
 
 1. At the beginning of `conditionalGAN.py`, specify root, training, and image save paths. Specify weights, iterations, and batch size.
 2. Preprocessing 
@@ -62,9 +62,3 @@ Joy Chen, Qingfu Wan
 
 
 
-
-----
-
-### Test
-
-----
