@@ -20,7 +20,8 @@ Joy Chen, Qingfu Wan
       b. Zhang Lab Data: separate pneumonia and normal images with `../full_code/find_all_jpeg_normal.py` and `../full_code/find_all_jpeg_pneumonia.py` into the              root directory and call the test classes "PNEUMONIA" and "NORMAL".
       
 3. Unzip the corresponding dataset into the root directory, either Chest X-ray 14 or Zhang Lab Data.
-      
+    
+----    
 
 ## Unconditional Score-guided GAN
 
@@ -60,10 +61,9 @@ Joy Chen, Qingfu Wan
 
 ----
 
-
-
-
 ## Data (NIH Chest X-ray 14)
+
+----
 
 Data is [here](https://nihcc.app.box.com/v/ChestXray-NIHCC). 
 
