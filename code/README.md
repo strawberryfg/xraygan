@@ -17,7 +17,7 @@ Joy Chen, Qingfu Wan
 2. Preprocessing 
       a. NIH Chest X-ray 14: same as preprocessing for UCGAN below.
       
-      b. Zhang Lab Data: separate pneumonia and normal images with `../full_code/find_all_jpeg_normal.py` and `../full_code/find_all_jpeg_pneumonia.py` into the              root directory and call the test classes "Pneumonia" and "Normal".
+      b. Zhang Lab Data: separate pneumonia and normal images with `../full_code/find_all_jpeg_normal.py` and `../full_code/find_all_jpeg_pneumonia.py` into the              root directory and call the test classes "PNEUMONIA" and "NORMAL".
       
 3. Unzip the corresponding dataset into the root directory, either Chest X-ray 14 or Zhang Lab Data.
       
