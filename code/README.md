@@ -26,7 +26,7 @@ Joy Chen, Qingfu Wan
 
 ----
 
-### Train
+## Steps
 
 
 1. At the beginning of `unconditionalGAN.py`, specify hyper-parameters and configuration parameters *e.g.* `root_dir`,  learning rates,  loss weights, paths to store the weights, how many iterations per displaying... Specify used classes in *usable_label_arr*.
@@ -60,5 +60,34 @@ Joy Chen, Qingfu Wan
 
 ----
 
+
+----
+
+
+
+## Data (NIH Chest X-ray 14)
+
+Data is [here](https://nihcc.app.box.com/v/ChestXray-NIHCC). 
+
+The structure:
+
+``` shell
+${DATA_ROOT}
+|-- images_001
+`-- |-- images
+|-- images_002
+`-- |-- images
+|-- ..........
+`-- |-- ......
+|-- images_012
+`-- |-- images
+|-- data_entry.csv
+|-- train_val_list.txt
+|-- test_list.txt
+|-- image_index.txt
+|-- labels.txt
+```
+
+----
 
 
