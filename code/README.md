@@ -13,11 +13,11 @@ Joy Chen, Qingfu Wan
 
 ## Train
 
-1. At the beginning of 'conditionalGAN.py', specify root, training, and image save paths. Specify weights, iterations, and batch size.
+1. At the beginning of `conditionalGAN.py`, specify root, training, and image save paths. Specify weights, iterations, and batch size.
 2. Preprocessing 
       a. NIH Chest X-ray 14: same as preprocessing for UCGAN below.
       
-      b. Zhang Lab Data: separate pneumonia and normal images with '../full_code/find_all_jpeg_normal.py' and '../full_code/find_all_jpeg_pneumonia.py' into the              root directory. 
+      b. Zhang Lab Data: separate pneumonia and normal images with `../full_code/find_all_jpeg_normal.py` and `../full_code/find_all_jpeg_pneumonia.py` into the              root directory and call the test classes "Pneumonia" and "Normal".
       
 3. Unzip the corresponding dataset into the root directory, either Chest X-ray 14 or Zhang Lab Data.
       
