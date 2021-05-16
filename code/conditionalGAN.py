@@ -121,7 +121,7 @@ class CGAN():
 
   
   def load_xrays(self, epochs=100, batch_size=1000, save_interval=20):
-    (img_x, img_y) = 256, 256
+    (img_x, img_y) = 128, 128
     train_path = '/content/drive/MyDrive/xray GAN/xray14/'
     data_path = 'data_entry.csv'
 
@@ -259,16 +259,13 @@ if __name__ == '__main__':
   cgan.load_xrays(epochs=100, batch_size=1000, save_interval=20)
   cgan.generator.save('models/gen.h5')
   cgan.discriminator.save('models/disc.h5')
-  # Generate one-hot-encoded labels
-  # prepare label binarizer
 
   lb = preprocessing.LabelEncoder()#Binarizer()
 
-  classes = ['Effusion', 'Emphysema', 'Cardiomegaly','Mass']
+  classes = ['Effusion', 'Pneumonia', 'Hernia', 'Mass']
 
   OHE_labels = lb.fit_transform(classes)
-
-  # at the end, loop per class, per 1000 images
+  
   cnt = 0
   fig, ax = plt.subplots()
   for label in OHE_labels:
