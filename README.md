@@ -63,7 +63,7 @@ Joy Chen, Qingfu Wan
 Clear indication of ribs, spine, and heart shading.
 
 <p align="center">  
-<img src="figs/cgan-image-comparison.gif" width="550" height="210">  
+<img src="figs/cgan-image-comparison.gif" width="550" height="260">  
 </p> 
 
 ## UCGAN
@@ -72,7 +72,7 @@ Clear spines, lungs, and varied contrastness \& color gradient.
 
 
 <p align="center">  
-<img src="figs/ucganimgs.gif" width="550" height="260">  
+<img src="figs/ucganimgs.gif" width="550" height="310">  
 </p> 
 
 
