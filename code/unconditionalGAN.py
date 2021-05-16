@@ -2049,7 +2049,4 @@ if resume_training:
 
 total_trained_samples = train(total_trained_samples)
  
-            
-  
-      
-      
+    
