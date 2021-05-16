@@ -4,7 +4,7 @@
 
 Joy Chen, Qingfu Wan
 
-----
+
 ----
 
 ## Conditional GAN
@@ -60,8 +60,6 @@ Joy Chen, Qingfu Wan
 
 ----
 
-
-----
 
 
 
