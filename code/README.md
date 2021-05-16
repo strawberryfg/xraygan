@@ -8,7 +8,7 @@ Joy Chen, Qingfu Wan
 
 ----
 
-## Conditional GAN
+# Conditional GAN
 
 ----
 
@@ -24,7 +24,7 @@ Joy Chen, Qingfu Wan
     
 ----    
 
-## Unconditional Score-guided GAN
+# Unconditional Score-guided GAN
 
 ----
 
@@ -62,7 +62,7 @@ Joy Chen, Qingfu Wan
 
 ----
 
-## Data (NIH Chest X-ray 14)
+# Data (NIH Chest X-ray 14)
 
 ----
 
