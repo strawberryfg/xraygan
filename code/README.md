@@ -56,7 +56,7 @@ Joy Chen, Qingfu Wan
 	   * load D and G from `model_path_gan` and load from `model_path_cla`. 
 	* `save_gan_per_iters`: save GANerated images on-the-fly.
 	* `show_test_classifier_acc_per_iters`: show intermediate test performances.
-	* `save_per_samples`: save a checkpoint per this number iterations.
+	* `save_per_samples`: save a checkpoint per this number of iterations.
 
 
 
