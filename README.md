@@ -17,7 +17,7 @@ Joy Chen, Qingfu Wan
 
 
 <p align="center">  
-<img src="figs/cgan.gif" width="600" height="350" >  
+<img src="figs/cgan.gif" width="600" height="300" >  
 </p> 
 
   ## UCGAN
