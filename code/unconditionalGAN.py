@@ -29,6 +29,36 @@ d_vs_g = 3
 per_class_sample = True
 weights_prefix = '../models_allclasses_wis_mmd_nst/'
 weights_middle_name = "_allclasses_is_mmd_epo_"
+model_dir = 'F:/nst/ist/Models/' #os.getcwd() + '/Models/'
+
+#5. Configurations and arguments
+root_dir = "E:/ml/" # chest x-ray 14
+n_classes = 15 # 0 is normal : no finding
+batch_size = 12
+img_size = 128
+display_per_iters = 8 # how many iterations before outputting to the console window
+save_gan_per_iters = 5 # save gan images per this iterations
+save_gan_img_folder_prefix = root_dir + "train_fake_allclasses_wis_mmd_nst/"
+show_train_classifier_acc_per_iters = 1000000 # how many iterations before showing train acc of classifier
+# Deprecated in favor of per-epoch test
+show_test_classifier_acc_per_iters = 290 # 
+save_per_samples = 2000 # save a checkpoint per forward run of this number of samples
+model_ckpt_prefix = 'ecgan-chest-xray14'
+
+use_label_smoothing = False
+smoothing = 0.1
+
+
+
+# The files that contain paths of all images
+image_index_list_file = root_dir + "image_index.txt"
+labels_file = root_dir + "labels.txt"
+train_val_list_file = root_dir + "train_val_list.txt"
+test_list_file = root_dir + "test_list.txt"
+img_folders = { 'images_001/', 'images_002/', 'images_003/', 'images_005/', 'images_008/', 'images_011/', 'images_006/', 'images_007/', 'images_004/', 'images_009/', 'images_010/', 'images_012/'}
+suffix = 'images/'
+
+
 #0. torch imports
 import torch
 from torch.utils.data import DataLoader,Dataset
@@ -289,37 +319,6 @@ def patch_replication_callback(data_parallel):
     data_parallel.replicate = new_replicate
 
 
-
-
-
-# 0. ResNet 18
-# ResNet Classifier
-#class BasicBlock(nn.Module):
-#    expansion = 1
-
-#    def __init__(self, in_planes, planes, stride=1):
-#        super(BasicBlock, self).__init__()
-#        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
-#        self.bn1 = nn.BatchNorm2d(planes)
-#        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
-#        self.bn2 = nn.BatchNorm2d(planes)
-
-#        self.shortcut = nn.Sequential()
-#        if stride != 1 or in_planes != self.expansion*planes:
-#            self.shortcut = nn.Sequential(
-#                nn.Conv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=False),
-#                nn.BatchNorm2d(self.expansion*planes)
-#            )
-
-#    def forward(self, x):
-#        out = F.relu(self.bn1(self.conv1(x)))
-#        out = self.bn2(self.conv2(out))
-#        out += self.shortcut(x)
-#        out = F.relu(out)
-#        return out
-
-
-
 # gram matrix and loss
 class GramMatrix(nn.Module):
     def forward(self, input):
@@ -464,7 +463,6 @@ class VGG(nn.Module):
 
 
 
-model_dir = 'F:/nst/ist/Models/' #os.getcwd() + '/Models/'
 #get network
 vgg = VGG()
 
@@ -1085,33 +1083,10 @@ class colorlogger():
         self._logger.error(RED + 'ERR: ' + str(msg) + END)
 
 
-#5. Configurations and arguments
-root_dir = "E:/ml/" # chest x-ray 14
-n_classes = 15 # 0 is normal : no finding
-batch_size = 12
-img_size = 128
-display_per_iters = 8 # how many iterations before outputting to the console window
-save_gan_per_iters = 5 # save gan images per this iterations
-save_gan_img_folder_prefix = root_dir + "train_fake_allclasses_wis_mmd_nst/"
-show_train_classifier_acc_per_iters = 1000000 # how many iterations before showing train acc of classifier
-# Deprecated in favor of per-epoch test
-show_test_classifier_acc_per_iters = 290 # 
-save_per_samples = 2000 # save a checkpoint per forward run of this number of samples
-model_ckpt_prefix = 'ecgan-chest-xray14'
-
-use_label_smoothing = False
-smoothing = 0.1
 
 # define device 
 device = torch.device("cuda:0")
 
-# The files that contain paths of all images
-image_index_list_file = root_dir + "image_index.txt"
-labels_file = root_dir + "labels.txt"
-train_val_list_file = root_dir + "train_val_list.txt"
-test_list_file = root_dir + "test_list.txt"
-img_folders = { 'images_001/', 'images_002/', 'images_003/', 'images_005/', 'images_008/', 'images_011/', 'images_006/', 'images_007/', 'images_004/', 'images_009/', 'images_010/', 'images_012/'}
-suffix = 'images/'
 image_index_list = []    
 labels_list = []
 img_index_2_label_dict = {}
