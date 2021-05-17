@@ -53,7 +53,7 @@ Joy Chen, Qingfu Wan
 * More options (*non-exhaustive*):
 	* `resume_training`: 
 	   * load D(discriminator),  G(generator) and C(classifier) from a previous checkpoint `model_path`.
-	   * load D and G from `model_path_gan` and load from `model_path_cla`. 
+	   * load D and G from `model_path_gan` and load C from `model_path_cla`. 
 	* `save_gan_per_iters`: save GANerated images on-the-fly.
 	* `show_test_classifier_acc_per_iters`: show intermediate test performances.
 	* `save_per_samples`: save a checkpoint per this number of iterations.
