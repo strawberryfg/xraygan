@@ -28,9 +28,8 @@ Joy Chen, Qingfu Wan
 </p> 
 
 ----
-
-
 # General Structure
+----
 
    ```
    ${ROOT}
@@ -41,14 +40,28 @@ Joy Chen, Qingfu Wan
    +-- README.md
    ```
 
+
+
+
 # Clean Code
+
    
    `${ROOT}/code/`
    
+   
 # The Complete Set of Code
+
    
    `${ROOT}/full_code/`
 
+
+
+----
+# Environment
+----
+
+- PyTorch
+- Keras
 
 
 ----
