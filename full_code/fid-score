@@ -1,0 +1,15 @@
+import  pytorch_fid_wrapper as pfw
+
+# ---------------------------
+# -----  Initial Setup  -----
+# ---------------------------
+
+# Optional: compute real_m and real_s only once, they will not change during training
+real_m, real_s = pfw.get_stats(real_images)
+
+# -------------------------------------
+# -----  Computing the FID Score  -----
+# -------------------------------------
+
+pfw.set_config(batch_size=100, dims=256, device="cuda:0")
+val_fid = pfw.fid(fake_images, real_m=real_m, real_s=real_s)
