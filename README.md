@@ -81,7 +81,7 @@ Clear indication of ribs, spine, and heart shading.
 
 ## UCGAN
 
-Clear spines, lungs, and varied contrastness \& color gradient.
+Clear spines, lungs, and varied contrast \& color gradient.
 
 
 <p align="center">  
