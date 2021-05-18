@@ -46,7 +46,7 @@ Joy Chen, Qingfu Wan
 # Report
 ----
 
-Report can be found here.
+Full report [here](https://github.com/strawberryfg/xraygan/blob/main/ML_FinalReport.pdf).
 
 ----
 # General Structure
