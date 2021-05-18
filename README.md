@@ -43,6 +43,12 @@ Joy Chen, Qingfu Wan
 - A foolproof *online self-annotation* mechanism compensating for insufficient data.
 
 ----
+# Report
+----
+
+Report can be found here.
+
+----
 # General Structure
 ----
 
