@@ -27,6 +27,21 @@ Joy Chen, Qingfu Wan
 <img src="figs/xraygan.gif" width="600" height="350">  
 </p> 
 
+
+----
+# Features
+----
+
+- Conditioning the image generation on class labels for a better *equilibrium* in *imbalanced multi-modal* data.
+
+- Metrics-turned-Trainable-Scores + Self-aligned Perceptual Style Scores for a better-learned *data distribution*.
+
+- Built-in classifier as an *implicit* evaluator and an *explicit* learner.
+
+- Label-aware *class-specific* generation + class-agnostic *homogenous* generation system.
+
+- A foolproof *online self-annotation* mechanism for compensation of lacking data.
+
 ----
 # General Structure
 ----
