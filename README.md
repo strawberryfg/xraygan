@@ -34,7 +34,7 @@ Joy Chen, Qingfu Wan
 
 - Conditioning the image generation on class labels for a better *equilibrium* in *imbalanced multi-modal* data.
 
-- Metrics-turned-Trainable-Scores + Self-aligned Perceptual Style Scores for a better-learned *data distribution*.
+- Metrics-turned-Trainable-Scores + Self-aligned Perceptual Style Scores for better-learned *data distribution*.
 
 - Built-in classifier as an *implicit* evaluator and an *explicit* learner.
 
