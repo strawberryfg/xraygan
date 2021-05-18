@@ -24,7 +24,7 @@ import numpy as np
 
 from sklearn import preprocessing
 
-#CGAN adapted from Mirza, Osindero (2014) and Gupta, Lynch (https://github.com/Anushka1610/chest-gan/blob/master/model/cgan.py)
+#CGAN adapted from Mirza, Osindero (2014) and Gupta, Lynch (https://github.com/Anushka1610/chest-gan/blob/master/model/cgan.py).
 class CGAN(): 
   def __init__(self):
     #self.__root = None
