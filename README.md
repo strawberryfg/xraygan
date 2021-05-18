@@ -40,7 +40,7 @@ Joy Chen, Qingfu Wan
 
 - Label-aware *class-specific* generation + class-agnostic *homogenous* generation system.
 
-- A foolproof *online self-annotation* mechanism for compensation of insufficient data.
+- A foolproof *online self-annotation* mechanism compensating for insufficient data.
 
 ----
 # General Structure
